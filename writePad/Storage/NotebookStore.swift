@@ -85,6 +85,12 @@ struct NotebookStore: Sendable {
         try drawing.dataRepresentation().write(to: url, options: .atomic)
     }
 
+    func deleteDrawing(pageID: UUID, notebookID: UUID) throws {
+        let url = drawingURL(pageID: pageID, notebookID: notebookID)
+        guard FileManager.default.fileExists(atPath: url.path()) else { return }
+        try FileManager.default.removeItem(at: url)
+    }
+
     // MARK: Coding
 
     private static let encoder: JSONEncoder = {

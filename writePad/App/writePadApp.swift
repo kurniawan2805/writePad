@@ -8,7 +8,7 @@ struct WritePadApp: App {
 
     var body: some Scene {
         WindowGroup {
-            NavigationStack {
+            Group {
                 if let editor {
                     NotebookEditorView(viewModel: editor)
                 } else if let loadError {

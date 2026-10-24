@@ -31,7 +31,9 @@ project.yml                 XcodeGen spec — source of truth for the Xcode proj
 writePad/App/               app entry, scene lifecycle (flushes autosave on background)
 writePad/Models/            Codable models: NotebookManifest, PageInfo, PageBackground
 writePad/Storage/           NotebookStore — reads/writes .writepad packages
-writePad/Features/Editor/   CanvasView (PKCanvasView wrapper), EditorViewModel, NotebookEditorView
+writePad/Features/Editor/   NotebookCanvasView (one zoomable PKCanvasView, pages stacked), PageLayout
+                            (page geometry + merge/split of per-page drawings), PageBackgroundRenderer,
+                            EditorViewModel, NotebookEditorView, PageSidebarView
 writePad/Features/Library/  (Milestone 3)  writePad/Features/PDF/  (Milestone 4)
 writePadTests/              Swift Testing (`import Testing`, `@Test`, `#expect`)
 ```
@@ -42,6 +44,8 @@ writePadTests/              Swift Testing (`import Testing`, `@Test`, `#expect`)
 - **File format** (`<uuid>.writepad/`): `manifest.json` + `pages/<pageId>.drawing` (`PKDrawing.dataRepresentation()`). Dates are ISO 8601 with milliseconds. Any change to the format must bump `NotebookManifest.currentVersion` and keep loading older versions.
 - Keep large data (drawings, PDFs, images) as files in the package — not in SwiftData.
 - Store drawings in page coordinates, not view/zoom coordinates, so export matches the screen.
+- The notebook editor shows all pages on one `PKCanvasView`; `PageLayout.split` assigns each stroke to the page under its center. Page add/delete/move/paper changes bump `structureVersion`, which reloads the canvas and clears undo.
+- The canvas forces light appearance (paper is white); the area around pages follows system appearance.
 - UI-facing types are `@MainActor`; `@Observable` view models; `NotebookStore` stays a `Sendable` value type.
 - Match existing style: small focused types, sparse comments that explain *why*, SF Symbols for icons.
 - Simulator has no Apple Pencil: finger drawing defaults on in the simulator, off on device. Pressure, palm rejection and latency must be checked on a real iPad — say so when you couldn't.

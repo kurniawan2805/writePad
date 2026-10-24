@@ -105,10 +105,10 @@ Goal: *"I can create a notebook, write on it with Pencil, import a PDF, mark it 
 - ✅ Done when: write a page, kill the app, reopen — ink is there.
 
 ### Milestone 2 — Notebooks & pages (week 2–3)
-- [ ] Notebook = list of pages; vertical scroll of pages (A4 / Letter size)
-- [ ] Page backgrounds: blank, lined, grid, dotted (drawn as a background layer, not in the drawing)
-- [ ] Add / delete / reorder pages, page thumbnails sidebar
-- [ ] Zoom & pan
+- [x] Notebook = list of pages; vertical scroll of pages (A4 / Letter size)
+- [x] Page backgrounds: blank, lined, grid, dotted (drawn as a background layer, not in the drawing)
+- [x] Add / delete / reorder pages, page thumbnails sidebar
+- [x] Zoom & pan
 
 ### Milestone 3 — Library (week 3–4)
 - [ ] Grid of notebooks with thumbnails, folders, rename, delete, search by title

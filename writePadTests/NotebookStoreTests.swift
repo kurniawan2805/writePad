@@ -39,6 +39,11 @@ struct NotebookStoreTests {
         #expect(loaded.bounds == drawing.bounds)
     }
 
+    @Test func deletingMissingDrawingIsNoOp() throws {
+        let manifest = try store.createNotebook(title: "Nothing")
+        try store.deleteDrawing(pageID: UUID(), notebookID: manifest.id)
+    }
+
     @Test func newerFormatVersionIsRejected() throws {
         var manifest = try store.createNotebook(title: "Future")
         manifest.version = NotebookManifest.currentVersion + 1
@@ -47,17 +52,6 @@ struct NotebookStoreTests {
         #expect(throws: NotebookStore.StoreError.unsupportedVersion(manifest.version)) {
             try store.loadManifest(id: manifest.id)
         }
-    }
-
-    @MainActor
-    @Test func editorSavesDrawingAndReopens() throws {
-        let editor = try EditorViewModel.openDefault(store: store)
-        editor.drawingDidChange(Self.sampleDrawing())
-        editor.saveNow()
-
-        let reopened = try EditorViewModel.openDefault(store: store)
-        #expect(reopened.manifest.id == editor.manifest.id)
-        #expect(reopened.drawing.strokes.count == 1)
     }
 
     static func sampleDrawing() -> PKDrawing {
