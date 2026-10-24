@@ -1,0 +1,10 @@
+included:
+  - writePad
+  - writePadTests
+disabled_rules:
+  - trailing_comma
+line_length:
+  warning: 140
+  error: 200
+identifier_name:
+  excluded: [id, x, y]

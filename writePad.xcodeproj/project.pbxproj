@@ -1,0 +1,507 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		3483687DE3F09FC3D6FF797B /* EditorViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6F609D7C8B27F57E0FE5E6A /* EditorViewModel.swift */; };
+		715B012C14FC08947F517108 /* NotebookStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB6ED5CBCD264609821E18C1 /* NotebookStoreTests.swift */; };
+		8D7069CCE7CA8F1506FE4DE6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 6B889B60CDA1A3D13C10D300 /* Assets.xcassets */; };
+		9230615BD57C7CD5B603FD24 /* Notebook.swift in Sources */ = {isa = PBXBuildFile; fileRef = 281B1526F94B10F201FE3661 /* Notebook.swift */; };
+		99DB2A6F22247F5123A71DB7 /* CanvasView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74184EE18E9060014A92676F /* CanvasView.swift */; };
+		BCDEDA57FED8E4655B9B6DE5 /* NotebookStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD4A504E222BC30442CB93DC /* NotebookStore.swift */; };
+		D40BB9571E89EE832209093E /* NotebookEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BAA1C0C046196B1E63162D6 /* NotebookEditorView.swift */; };
+		F6CE1188E220A93FC241C2D3 /* writePadApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 148587FFBFA085F8E2FDEBAC /* writePadApp.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		496D7026CBEA94AEC0965B7F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F635A182DBB7AA124AB2DC59 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 93382D71EDD5F2BA9B63F9CD;
+			remoteInfo = writePad;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		04CCEFEA41EBC46A589DF8FC /* writePad.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = writePad.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		148587FFBFA085F8E2FDEBAC /* writePadApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = writePadApp.swift; sourceTree = "<group>"; };
+		281B1526F94B10F201FE3661 /* Notebook.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notebook.swift; sourceTree = "<group>"; };
+		6B889B60CDA1A3D13C10D300 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		74184EE18E9060014A92676F /* CanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasView.swift; sourceTree = "<group>"; };
+		7BAA1C0C046196B1E63162D6 /* NotebookEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotebookEditorView.swift; sourceTree = "<group>"; };
+		9B369D1751F623454EDA5D5E /* writePadTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = writePadTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		CD4A504E222BC30442CB93DC /* NotebookStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotebookStore.swift; sourceTree = "<group>"; };
+		DB6ED5CBCD264609821E18C1 /* NotebookStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotebookStoreTests.swift; sourceTree = "<group>"; };
+		E6F609D7C8B27F57E0FE5E6A /* EditorViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorViewModel.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		11E12999E8D2AD5E5A19F0D9 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				148587FFBFA085F8E2FDEBAC /* writePadApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		393C0E628E0D67C8665E7FE1 /* Editor */ = {
+			isa = PBXGroup;
+			children = (
+				74184EE18E9060014A92676F /* CanvasView.swift */,
+				E6F609D7C8B27F57E0FE5E6A /* EditorViewModel.swift */,
+				7BAA1C0C046196B1E63162D6 /* NotebookEditorView.swift */,
+			);
+			path = Editor;
+			sourceTree = "<group>";
+		};
+		528E84A88287D9B68F93C4B7 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				281B1526F94B10F201FE3661 /* Notebook.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		741CF607F9704C2227F525D1 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				04CCEFEA41EBC46A589DF8FC /* writePad.app */,
+				9B369D1751F623454EDA5D5E /* writePadTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		7B9B9DC4DCAB36B3AFFE900D /* writePad */ = {
+			isa = PBXGroup;
+			children = (
+				11E12999E8D2AD5E5A19F0D9 /* App */,
+				D6E62C50ACC71889C7A6D170 /* Features */,
+				528E84A88287D9B68F93C4B7 /* Models */,
+				F2E498C3D418D3400B946AF4 /* Resources */,
+				E461A0C191C65CD7157CB105 /* Storage */,
+			);
+			path = writePad;
+			sourceTree = "<group>";
+		};
+		99C0EFACD85905210DC8FD9E = {
+			isa = PBXGroup;
+			children = (
+				7B9B9DC4DCAB36B3AFFE900D /* writePad */,
+				E2B413779603A0C625C8F286 /* writePadTests */,
+				741CF607F9704C2227F525D1 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		D6E62C50ACC71889C7A6D170 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				393C0E628E0D67C8665E7FE1 /* Editor */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		E2B413779603A0C625C8F286 /* writePadTests */ = {
+			isa = PBXGroup;
+			children = (
+				DB6ED5CBCD264609821E18C1 /* NotebookStoreTests.swift */,
+			);
+			path = writePadTests;
+			sourceTree = "<group>";
+		};
+		E461A0C191C65CD7157CB105 /* Storage */ = {
+			isa = PBXGroup;
+			children = (
+				CD4A504E222BC30442CB93DC /* NotebookStore.swift */,
+			);
+			path = Storage;
+			sourceTree = "<group>";
+		};
+		F2E498C3D418D3400B946AF4 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				6B889B60CDA1A3D13C10D300 /* Assets.xcassets */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		6BE7742F93B403EC11FF3826 /* writePadTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 64EBC31A4A8E125E5A4A4BBF /* Build configuration list for PBXNativeTarget "writePadTests" */;
+			buildPhases = (
+				8F9702A271FC73C18037DD10 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				90FEF11AEBF65CB2C08C6D09 /* PBXTargetDependency */,
+			);
+			name = writePadTests;
+			packageProductDependencies = (
+			);
+			productName = writePadTests;
+			productReference = 9B369D1751F623454EDA5D5E /* writePadTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		93382D71EDD5F2BA9B63F9CD /* writePad */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 70324D40389B8AF7BE50C5B1 /* Build configuration list for PBXNativeTarget "writePad" */;
+			buildPhases = (
+				E0EB06999A42E7D5EF7DF38E /* Sources */,
+				7E45225C27B72AC3C2B379EC /* SwiftLint */,
+				6AB370FB5BE71517DF4F033F /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = writePad;
+			packageProductDependencies = (
+			);
+			productName = writePad;
+			productReference = 04CCEFEA41EBC46A589DF8FC /* writePad.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		F635A182DBB7AA124AB2DC59 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
+			};
+			buildConfigurationList = 6F88F2034305F0F15215AA25 /* Build configuration list for PBXProject "writePad" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 99C0EFACD85905210DC8FD9E;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 741CF607F9704C2227F525D1 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				93382D71EDD5F2BA9B63F9CD /* writePad */,
+				6BE7742F93B403EC11FF3826 /* writePadTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		6AB370FB5BE71517DF4F033F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8D7069CCE7CA8F1506FE4DE6 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		7E45225C27B72AC3C2B379EC /* SwiftLint */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = SwiftLint;
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "export PATH=\"/opt/homebrew/bin:$PATH\"\nif which swiftlint > /dev/null; then\n  swiftlint lint --quiet\nelse\n  echo \"warning: SwiftLint not installed\"\nfi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		8F9702A271FC73C18037DD10 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				715B012C14FC08947F517108 /* NotebookStoreTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E0EB06999A42E7D5EF7DF38E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				99DB2A6F22247F5123A71DB7 /* CanvasView.swift in Sources */,
+				3483687DE3F09FC3D6FF797B /* EditorViewModel.swift in Sources */,
+				9230615BD57C7CD5B603FD24 /* Notebook.swift in Sources */,
+				D40BB9571E89EE832209093E /* NotebookEditorView.swift in Sources */,
+				BCDEDA57FED8E4655B9B6DE5 /* NotebookStore.swift in Sources */,
+				F6CE1188E220A93FC241C2D3 /* writePadApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		90FEF11AEBF65CB2C08C6D09 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 93382D71EDD5F2BA9B63F9CD /* writePad */;
+			targetProxy = 496D7026CBEA94AEC0965B7F /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		43A216DB3280114601328888 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = writePad;
+				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIFileSharingEnabled = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.adi.writePad;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Release;
+		};
+		45EA097F40E283BA57C089BF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = writePad;
+				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIFileSharingEnabled = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.adi.writePad;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Debug;
+		};
+		4B04207E10CB6B563CDFF0DD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.adi.writePadTests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 2;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/writePad.app/writePad";
+			};
+			name = Release;
+		};
+		5B9F8707E290BC13CFA987CF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.adi.writePadTests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 2;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/writePad.app/writePad";
+			};
+			name = Debug;
+		};
+		6F122C379A6BC8245661003B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		C312C167FEF4F48B252480E7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		64EBC31A4A8E125E5A4A4BBF /* Build configuration list for PBXNativeTarget "writePadTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5B9F8707E290BC13CFA987CF /* Debug */,
+				4B04207E10CB6B563CDFF0DD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		6F88F2034305F0F15215AA25 /* Build configuration list for PBXProject "writePad" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6F122C379A6BC8245661003B /* Debug */,
+				C312C167FEF4F48B252480E7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		70324D40389B8AF7BE50C5B1 /* Build configuration list for PBXNativeTarget "writePad" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				45EA097F40E283BA57C089BF /* Debug */,
+				43A216DB3280114601328888 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = F635A182DBB7AA124AB2DC59 /* Project object */;
+}
