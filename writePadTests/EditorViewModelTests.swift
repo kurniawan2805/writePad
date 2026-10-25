@@ -166,6 +166,22 @@ struct EditorViewModelTests {
         #expect(editor.pages.allSatisfy { editor.thumbnails[$0.id] != nil })
     }
 
+    @Test func pendingThumbnailsCannotRestoreDeletedPages() async throws {
+        let editor = try EditorViewModel.openDefault(store: store)
+        let survivor = editor.pages[0].id
+        editor.setBackground(.cornell, forPageAt: 0)
+        editor.setBackground(.plannerWeek, forPageAt: 0)
+        editor.addPage()
+        let removed = editor.pages[1].id
+        editor.deletePage(at: 1)
+        await editor.waitForThumbnails()
+
+        #expect(editor.pages.map(\.id) == [survivor])
+        #expect(editor.thumbnails.keys.sorted() == [survivor])
+        #expect(editor.thumbnails[removed] == nil)
+        #expect(editor.pages[0].background == .plannerWeek)
+    }
+
     @Test func newerNotebookOpensReadOnlyAndNothingIsWritten() throws {
         var manifest = try store.createNotebook(title: "From the future")
         manifest.version = NotebookManifest.currentVersion + 1

@@ -369,13 +369,11 @@ extension EditorViewModel {
         let sourceURL = store.sourcePDFURL(for: manifest.id)
         let width = Self.thumbnailWidth
         let token = UUID()
-        thumbnailTasks[token] = Task.detached(priority: .utility) { [weak self] in
-            let document = jobs.contains { $0.pdfPageIndex != nil } ? PDFDocument(url: sourceURL) : nil
-            for job in jobs {
-                let image = job.render(document: document, width: width)
-                await self?.setThumbnail(image, for: job)
+        thumbnailTasks[token] = Task { [weak self] in
+            for await (job, image) in PageThumbnailJob.images(for: jobs, sourceURL: sourceURL, width: width) {
+                self?.setThumbnail(image, for: job)
             }
-            await self?.thumbnailTaskFinished(token)
+            self?.thumbnailTaskFinished(token)
         }
     }
 
