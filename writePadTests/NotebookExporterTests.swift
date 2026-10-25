@@ -247,6 +247,25 @@ struct NotebookExporterTests {
 
 extension NotebookExporterTests {
     @Test(arguments: [0, 90, 180, 270])
+    func vectorInkStaysInDisplayedCoordinatesOnCroppedPDF(rotation: Int) throws {
+        let sourceURL = store.rootURL.appending(path: "vector-source.pdf")
+        let source = try #require(makeSourcePDF(rotation: rotation).dataRepresentation())
+        try source.write(to: sourceURL, options: .atomic)
+        let page = PageInfo(pdfPageIndex: 0)
+        let drawing = PKDrawing(strokes: [PageLayoutTests.stroke(at: CGPoint(x: 10, y: 10))])
+        let snapshot = NotebookExport(manifest: NotebookManifest(title: "Vector PDF", pages: [page]),
+                                      drawings: [page.id: drawing.dataRepresentation()], sourcePDFURL: sourceURL)
+        let url = try NotebookExporter.export(snapshot, as: .pdf, directory: store.rootURL)
+        let document = try #require(PDFDocument(url: url))
+        let output = try #require(document.page(at: 0))
+        let size = rotation.isMultiple(of: 180) ? CGSize(width: 160, height: 240) : CGSize(width: 240, height: 160)
+        #expect(output.bounds(for: .mediaBox).size == size)
+        #expect(isDark(pixel(output.thumbnail(of: size, for: .mediaBox), x: 10, y: 10)))
+        #expect(output.annotations.isEmpty)
+        #expect(try Data(contentsOf: sourceURL) == source)
+    }
+
+    @Test(arguments: [0, 90, 180, 270])
     func pageItemsRenderOverRotatedPDFWithoutChangingSource(rotation: Int) async throws {
         let sourceURL = store.rootURL.appending(path: "items.pdf")
         let source = try #require(makeSourcePDF(rotation: rotation).dataRepresentation())

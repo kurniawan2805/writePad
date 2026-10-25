@@ -84,7 +84,7 @@ enum NotebookExporter {
                     try autoreleasepool {
                         let size = try pageSize(page, document: document)
                         context.beginPage(withBounds: CGRect(origin: .zero, size: size), pageInfo: [:])
-                        try draw(page, snapshot: snapshot, document: document, size: size, in: context.cgContext)
+                        try draw(page, snapshot: snapshot, document: document, size: size, in: context.cgContext, vectorInk: true)
                     }
                 } catch {
                     renderError = error
@@ -125,7 +125,7 @@ enum NotebookExporter {
     }
 
     private static func draw(_ page: PageInfo, snapshot: NotebookExport, document: PDFDocument?,
-                             size: CGSize, in context: CGContext) throws {
+                             size: CGSize, in context: CGContext, vectorInk: Bool = false) throws {
         let rect = CGRect(origin: .zero, size: size)
         context.saveGState()
         defer { context.restoreGState() }
@@ -160,8 +160,12 @@ enum NotebookExporter {
         }
         if let data = snapshot.drawings[page.id] {
             let drawing = try PKDrawing(data: data)
-            UITraitCollection(userInterfaceStyle: .light).performAsCurrent {
-                drawing.image(from: rect, scale: min(2, 4096 / max(size.width, size.height))).draw(in: rect)
+            if vectorInk {
+                try PDFInkRenderer.draw(drawing, in: context, rect: rect)
+            } else {
+                UITraitCollection(userInterfaceStyle: .light).performAsCurrent {
+                    drawing.image(from: rect, scale: min(2, 4096 / max(size.width, size.height))).draw(in: rect)
+                }
             }
         }
         PageItemRenderer.draw(snapshot.pageItems[page.id] ?? [], assets: snapshot.imageAssets, in: context)

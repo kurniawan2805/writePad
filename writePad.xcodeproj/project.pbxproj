@@ -39,12 +39,14 @@
 		8D7069CCE7CA8F1506FE4DE6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 6B889B60CDA1A3D13C10D300 /* Assets.xcassets */; };
 		9230615BD57C7CD5B603FD24 /* Notebook.swift in Sources */ = {isa = PBXBuildFile; fileRef = 281B1526F94B10F201FE3661 /* Notebook.swift */; };
 		971F3FA925A61D90AFDBBA35 /* StorageLocationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BBAE239ECB3F72745E22398 /* StorageLocationTests.swift */; };
+		98B82489078C86FCFC95B175 /* VectorInkExportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15A5291B88477FC40F549BF3 /* VectorInkExportTests.swift */; };
 		99DB2A6F22247F5123A71DB7 /* CanvasView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74184EE18E9060014A92676F /* CanvasView.swift */; };
 		A0A4C27E66ED44F8C9252835 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C94C12F02D2AE77891F4F24 /* LibraryView.swift */; };
 		A70E64A959576B6C60D1F364 /* XCUIApplication+Isolation.swift in Sources */ = {isa = PBXBuildFile; fileRef = F75EF293697C57D173C876E0 /* XCUIApplication+Isolation.swift */; };
 		AE6C5BB9C0FA8EAB60327408 /* LibraryItemForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0867D2DDEB7305ABDAA42CF /* LibraryItemForm.swift */; };
 		AF5D74A72AA0CE9F19E553FC /* PageItemsOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE2AFA26DDCDC2530F2A0BF4 /* PageItemsOverlay.swift */; };
 		B2FCF2ACFB11BC3D98572D38 /* PDFSidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A44469F9124D1C7A4DE730FE /* PDFSidebarView.swift */; };
+		B4F4FDD04547A5333D9BEE08 /* PDFInkRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 645B979F9415874454414372 /* PDFInkRenderer.swift */; };
 		B97DED9E41C5E033EF3BF59C /* PageLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68E4EDC773BDB52EF1E79F35 /* PageLayoutTests.swift */; };
 		B999854553B0B7B7397B208E /* NotebookStore+Items.swift in Sources */ = {isa = PBXBuildFile; fileRef = D579D4035F5C9A8133EEE1F5 /* NotebookStore+Items.swift */; };
 		BCDEDA57FED8E4655B9B6DE5 /* NotebookStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD4A504E222BC30442CB93DC /* NotebookStore.swift */; };
@@ -90,6 +92,7 @@
 		0C5D68F35B533EA90458C373 /* PDFMarkup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFMarkup.swift; sourceTree = "<group>"; };
 		12EC02585BEB6C3617044B51 /* NotebookExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotebookExporter.swift; sourceTree = "<group>"; };
 		148587FFBFA085F8E2FDEBAC /* writePadApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = writePadApp.swift; sourceTree = "<group>"; };
+		15A5291B88477FC40F549BF3 /* VectorInkExportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VectorInkExportTests.swift; sourceTree = "<group>"; };
 		1CA1678FDDC29CA7F4EDDEEC /* PageSidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageSidebarView.swift; sourceTree = "<group>"; };
 		1D640B6FC1762EBBE8289CFB /* NotebookExporterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotebookExporterTests.swift; sourceTree = "<group>"; };
 		2589EF233F7101CC3A7D4FC8 /* EditorViewModel+Items.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EditorViewModel+Items.swift"; sourceTree = "<group>"; };
@@ -101,6 +104,7 @@
 		4C94C12F02D2AE77891F4F24 /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
 		532BA4A0B041AD254C71DD83 /* ExportMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportMenu.swift; sourceTree = "<group>"; };
 		5C5D7E95A6842D16EE7949BC /* PDFCanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFCanvasView.swift; sourceTree = "<group>"; };
+		645B979F9415874454414372 /* PDFInkRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFInkRenderer.swift; sourceTree = "<group>"; };
 		68E4EDC773BDB52EF1E79F35 /* PageLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageLayoutTests.swift; sourceTree = "<group>"; };
 		6B889B60CDA1A3D13C10D300 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		74184EE18E9060014A92676F /* CanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasView.swift; sourceTree = "<group>"; };
@@ -240,6 +244,7 @@
 			children = (
 				532BA4A0B041AD254C71DD83 /* ExportMenu.swift */,
 				12EC02585BEB6C3617044B51 /* NotebookExporter.swift */,
+				645B979F9415874454414372 /* PDFInkRenderer.swift */,
 			);
 			path = Export;
 			sourceTree = "<group>";
@@ -294,6 +299,7 @@
 				9A7014CF60481FBA59EE4FE4 /* ShapeSnapperTests.swift */,
 				9BBAE239ECB3F72745E22398 /* StorageLocationTests.swift */,
 				9016C7857C714DB71DAF41AD /* ThumbnailCacheTests.swift */,
+				15A5291B88477FC40F549BF3 /* VectorInkExportTests.swift */,
 			);
 			path = writePadTests;
 			sourceTree = "<group>";
@@ -473,6 +479,7 @@
 				564A57D7ABAC0B0FFDBCB334 /* ShapeSnapperTests.swift in Sources */,
 				971F3FA925A61D90AFDBBA35 /* StorageLocationTests.swift in Sources */,
 				F08ED66E910801B50AD85C6F /* ThumbnailCacheTests.swift in Sources */,
+				98B82489078C86FCFC95B175 /* VectorInkExportTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -511,6 +518,7 @@
 				B999854553B0B7B7397B208E /* NotebookStore+Items.swift in Sources */,
 				BCDEDA57FED8E4655B9B6DE5 /* NotebookStore.swift in Sources */,
 				CA71041350FBF8D9F5DBC039 /* PDFCanvasView.swift in Sources */,
+				B4F4FDD04547A5333D9BEE08 /* PDFInkRenderer.swift in Sources */,
 				7F033E0D635439C0C06C2E9A /* PDFMarkup.swift in Sources */,
 				87863BEBB2F6F2FDD77900E4 /* PDFNotebook.swift in Sources */,
 				B2FCF2ACFB11BC3D98572D38 /* PDFSidebarView.swift in Sources */,

@@ -6,7 +6,7 @@ PDF export uses vector coverage shapes for pen, monoline and marker strokes. PNG
 
 ## Rendering
 
-A focused `PDFInkRenderer` consumes page-coordinate drawings in stroke order after the page background/PDF/markups and before page items. Sample the public B-spline interpolation API, use point size and azimuth for nib coverage, and apply each stroke transform and its pre-transform mask (including even-odd holes). Combine coverage before compositing transparency so a stroke does not darken at sample overlaps. Resolve colors in light appearance, as existing exports do.
+A focused `PDFInkRenderer` consumes page-coordinate drawings in stroke order after the page background/PDF/markups and before page items. Sample the public B-spline interpolation API and apply each stroke transform and its pre-transform mask (including even-odd holes). Pen/monoline use overlapping elliptical nib coverage aligned with the path tangent, joined between samples and normalized into one filled path so hairlines stay continuous and alpha does not darken at sample overlaps. Marker uses translucent nib stamps aligned with Pencil azimuth, preserving the accumulation of ink along a stroke. Nib geometry and marker density are approximations validated against native rendering, rather than undocumented PencilKit APIs. Resolve colors in light appearance, as existing exports do.
 
 Keep textured runs in their original stacking order and rasterize only their visible page region, at the existing bounded export scale. Preserve PencilKit appearance within those runs. Check cancellation between strokes/runs. No change to atomic export staging or source-PDF handling.
 
@@ -14,8 +14,12 @@ Keep textured runs in their original stacking order and rasterize only their vis
 
 - Render exported PDF back to pixels and compare with `PKDrawing.image` on white paper. Measure error over ink coverage, not mostly empty page pixels.
 - Cover straight/curved/tapered and elliptical nibs, dots, transparent/overlapping ink, transforms, erased masks with holes, light/dark appearance, and mixtures of vector/textured inks.
-- Recursively inspect PDF resources/content streams: vector-only ink must contain path painting and no image XObjects; textured ink must contain image XObjects. Check PDF/PNG source rotation, layering and page clipping.
+- Recursively inspect PDF resources, including transparency forms: vector-only ink must render visibly with no image XObjects; textured ink must contain image XObjects. Check PDF/PNG source rotation, layering and page clipping.
 - Run strict lint, unit tests and the full simulator suite. Record numerical fidelity tolerances and known rendering approximations in T10 QA. Add real-Pencil export comparison to the device checklist.
+
+## Fidelity limits
+
+PencilKit does not expose its rendered outline or marker particle shader. The solid nib excludes its rendering padding; marker approximates the native broad nib and average opacity without reproducing randomized pigment texture. Keep ink-area pixel error and coverage assertions in the suite, and validate real Pencil samples on hardware. Native raster rendering remains available in PNG exports.
 
 ## API sources
 
