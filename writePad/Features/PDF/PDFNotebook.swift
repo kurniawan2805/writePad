@@ -21,6 +21,9 @@ final class PDFNotebook {
     var isDrawing = false
     var onChange: ((UUID) -> Void)?
     @ObservationIgnored weak var view: PDFView?
+    /// Markup changes share the window's undo stack with the ink, so Undo reverts whichever came last.
+    @ObservationIgnored var undoManagerOverride: UndoManager?
+    var undoManager: UndoManager? { undoManagerOverride ?? view?.undoManager }
     @ObservationIgnored private let sourcePages: [PDFPage]
     @ObservationIgnored private var appliedAnnotations: [(PDFPage, PDFAnnotation)] = []
 
@@ -104,17 +107,17 @@ final class PDFNotebook {
     @discardableResult
     func annotate(_ selection: PDFSelection, kind: PDFMarkup.Kind) -> Int {
         guard kind != .comment else { return 0 }
-        var count = 0
+        var added: [PDFMarkup] = []
         for line in selection.selectionsByLine() {
             for page in line.pages {
                 guard let id = pageID(for: page) else { continue }
                 let bounds = line.bounds(for: page)
                 guard !bounds.isEmpty, !bounds.isInfinite, !bounds.isNull else { continue }
-                append(PDFMarkup(pageID: id, kind: kind, bounds: bounds, text: line.string ?? ""))
-                count += 1
+                added.append(PDFMarkup(pageID: id, kind: kind, bounds: bounds, text: line.string ?? ""))
             }
         }
-        return count
+        if !added.isEmpty { setMarkups(markups + added, action: kind.actionName) }
+        return added.count
     }
 
     func addComment(_ text: String, pageID: UUID, at point: CGPoint? = nil) {
@@ -122,30 +125,46 @@ final class PDFNotebook {
         guard !text.isEmpty, let page = page(for: pageID) else { return }
         let crop = page.bounds(for: .cropBox)
         let origin = point ?? CGPoint(x: crop.minX + 24, y: crop.maxY - 48)
-        append(PDFMarkup(pageID: pageID, kind: .comment,
-                         bounds: CGRect(x: min(max(origin.x, crop.minX), crop.maxX - 24),
-                                        y: min(max(origin.y, crop.minY), crop.maxY - 24), width: 24, height: 24), text: text))
+        let comment = PDFMarkup(pageID: pageID, kind: .comment,
+                                bounds: CGRect(x: min(max(origin.x, crop.minX), crop.maxX - 24),
+                                               y: min(max(origin.y, crop.minY), crop.maxY - 24), width: 24, height: 24),
+                                text: text)
+        setMarkups(markups + [comment], action: "Comment")
     }
 
     func updateComment(id: UUID, text: String) {
         guard let index = markups.firstIndex(where: { $0.id == id }), markups[index].kind == .comment,
-              !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-        markups[index].text = text
-        refreshAnnotations()
-        onChange?(markups[index].pageID)
+              !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, markups[index].text != text else { return }
+        var edited = markups
+        edited[index].text = text
+        setMarkups(edited, action: "Edit Comment")
     }
 
     func removeMarkup(id: UUID) {
-        guard let markup = markups.first(where: { $0.id == id }) else { return }
-        markups.removeAll { $0.id == id }
-        refreshAnnotations()
-        onChange?(markup.pageID)
+        guard markups.contains(where: { $0.id == id }) else { return }
+        setMarkups(markups.filter { $0.id != id }, action: "Delete Annotation")
     }
 
-    private func append(_ markup: PDFMarkup) {
-        markups.append(markup)
-        apply(markup)
-        onChange?(markup.pageID)
+    /// Every markup edit goes through here, registering the way back (and, from undo, the way forward again).
+    private func setMarkups(_ new: [PDFMarkup], action: String) {
+        let old = markups
+        let pageIDs = Set((old.filter { !new.contains($0) } + new.filter { !old.contains($0) }).map(\.pageID))
+        markups = new
+        refreshAnnotations()
+        if let undoManager {
+            undoManager.registerUndo(withTarget: self) { notebook in notebook.setMarkups(old, action: action) }
+            undoManager.setActionName(action)
+            if undoManager.isUndoing || undoManager.isRedoing { reveal(pageIDs) }
+        }
+        for id in pageIDs { onChange?(id) }
+    }
+
+    /// Undo can change a page that is out of sight; show it so the change isn't invisible.
+    func reveal(_ pageIDs: Set<UUID>) {
+        guard let view, !pageIDs.isEmpty else { return }
+        let changed = pages.enumerated().filter { pageIDs.contains($0.element.id) }.compactMap { document.page(at: $0.offset) }
+        guard let first = changed.first, !changed.contains(where: view.visiblePages.contains) else { return }
+        view.go(to: first)
     }
 
     private func refreshAnnotations() {

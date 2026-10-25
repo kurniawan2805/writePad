@@ -61,6 +61,61 @@ final class PDFUITests: XCTestCase {
         verifyReopenedAnnotationsAndExport(app, title: title)
     }
 
+    /// Undo used to do nothing once the page with the stroke had scrolled away, and never reverted a highlight.
+    func testUndoReachesInkOnAnotherPageAndHighlights() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication.isolated()
+        let title = "PDF Undo \(UUID().uuidString.prefix(6))"
+        let url = URL.temporaryDirectory.appending(path: title + ".pdf")
+        try PDFFixture.data(pageCount: 6).write(to: url, options: .atomic)
+        app.launch()
+        app.open(url)
+        let imported = app.buttons.containing(.staticText, identifier: title).firstMatch
+        XCTAssertTrue(imported.waitForExistence(timeout: 15))
+        imported.tap()
+        XCTAssertTrue(app.pageIndicator(1, of: 6).waitForExistence(timeout: 15))
+        let reader = app.otherElements["PDF Reader"]
+        sleep(2) // let the reader fit the page before drawing
+
+        app.buttons["Draw on PDF"].tap()
+        reader.coordinate(withNormalizedOffset: CGVector(dx: 0.3, dy: 0.4))
+            .press(forDuration: 0.05, thenDragTo: reader.coordinate(withNormalizedOffset: CGVector(dx: 0.7, dy: 0.45)))
+        sleep(1)
+        screenshot("Stroke drawn on page 1")
+        app.buttons["Draw on PDF"].tap()
+        for _ in 0..<8 { reader.swipeUp(velocity: .fast) }
+        XCTAssertTrue(app.pageIndicator(1, of: 6).waitForNonExistence(timeout: 5))
+        app.buttons["Undo"].tap()
+        XCTAssertTrue(app.pageIndicator(1, of: 6).waitForExistence(timeout: 5), "undo shows the page it changed")
+        sleep(1)
+        screenshot("Stroke undone on page 1")
+        app.buttons["Redo"].tap()
+        sleep(1)
+        screenshot("Stroke redone on page 1")
+
+        showNavigation(in: app)
+        selectNavigation("Search", in: app)
+        let search = app.textFields["Search PDF Text"]
+        XCTAssertTrue(search.waitForExistence(timeout: 5))
+        search.tap()
+        search.typeText("Lecture 1")
+        app.buttons["PDF Search Result 1"].tap()
+        hideNavigation(in: app)
+        app.buttons["PDF Tools"].tap()
+        app.buttons["Highlight Selection"].tap()
+        showNavigation(in: app)
+        selectNavigation("Comments", in: app)
+        XCTAssertTrue(app.staticTexts["Lecture 1"].waitForExistence(timeout: 5))
+        hideNavigation(in: app)
+        app.buttons["Undo"].tap()
+        showNavigation(in: app)
+        XCTAssertTrue(app.staticTexts["No annotations yet."].waitForExistence(timeout: 5))
+        hideNavigation(in: app)
+        app.buttons["Redo"].tap()
+        showNavigation(in: app)
+        XCTAssertTrue(app.staticTexts["Lecture 1"].waitForExistence(timeout: 5))
+    }
+
     private func drawAndReopen(_ app: XCUIApplication, title: String) {
         app.buttons["Draw on PDF"].tap()
         XCTAssertTrue(app.buttons["Favorite Pen 1"].waitForExistence(timeout: 5))

@@ -24,6 +24,7 @@ struct PDFCanvasView: UIViewRepresentable {
         view.document = pdf.document
         context.coordinator.view = view
         pdf.view = view
+        controller.pdfView = view
         NotificationCenter.default.addObserver(context.coordinator, selector: #selector(Coordinator.pageChanged),
                                                name: .PDFViewPageChanged, object: view)
         return view
@@ -33,6 +34,8 @@ struct PDFCanvasView: UIViewRepresentable {
         view.isInMarkupMode = pdf.isDrawing || viewModel.isEditingItems
         let coordinator = context.coordinator
         if coordinator.structureVersion != viewModel.structureVersion {
+            // Undo steps point at canvases of the old page list, as in the notebook canvas.
+            if coordinator.structureVersion >= 0 { view.undoManager?.removeAllActions() }
             coordinator.clearOverlays()
             view.document = nil
             view.document = pdf.document
@@ -44,6 +47,7 @@ struct PDFCanvasView: UIViewRepresentable {
             overlay.canvas.isUserInteractionEnabled = pdf.isDrawing && !viewModel.isReadOnly && !viewModel.isEditingItems
             overlay.canvas.drawingPolicy = viewModel.allowsFingerDrawing ? .anyInput : .pencilOnly
             overlay.canvas.tool = viewModel.penTray.tool
+            overlay.canvas.undoForwarder.target = pdf.undoManager
         }
         if pdf.isDrawing && !viewModel.isEditingItems {
             coordinator.activateCurrentCanvas()
@@ -64,6 +68,7 @@ struct PDFCanvasView: UIViewRepresentable {
 
     static func dismantleUIView(_ view: PDFView, coordinator: Coordinator) {
         coordinator.clearOverlays()
+        view.undoManager?.removeAllActions()
         NotificationCenter.default.removeObserver(coordinator)
         view.pageOverlayViewProvider = nil
         coordinator.pdf.view = nil
@@ -76,6 +81,9 @@ struct PDFCanvasView: UIViewRepresentable {
         let controller: CanvasController
         weak var view: PDFView?
         var overlays: [UUID: PDFPageCanvas] = [:]
+        /// The page's ink when the pen (or eraser, or lasso) went down, so one gesture is one undo step.
+        private var gestureStart: InkGestureStart?
+        private var isRestoringInk = false
         var structureVersion = -1
         var scrollRequestID: UUID?
 
@@ -94,6 +102,7 @@ struct PDFCanvasView: UIViewRepresentable {
             overlay.canvas.isUserInteractionEnabled = pdf.isDrawing && !viewModel.isReadOnly && !viewModel.isEditingItems
             overlay.canvas.drawingPolicy = viewModel.allowsFingerDrawing ? .anyInput : .pencilOnly
             overlay.canvas.tool = viewModel.penTray.tool
+            overlay.canvas.undoForwarder.target = pdf.undoManager
             overlay.canvas.accessibilityIdentifier = "PDF Ink Page \((pdf.pages.firstIndex { $0.id == id } ?? 0) + 1)"
             overlay.pencilInteraction = PencilToolInteraction(
                 canvas: overlay.canvas, state: viewModel.penTray
@@ -123,13 +132,35 @@ struct PDFCanvasView: UIViewRepresentable {
         }
 
         func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
-            guard let (id, overlay) = overlays.first(where: { $0.value.canvas === canvasView }) else { return }
+            guard !isRestoringInk, let (id, overlay) = overlays.first(where: { $0.value.canvas === canvasView }) else { return }
             overlay.snapper?.drawingDidChange()
+            let before = viewModel.drawing(forPage: id)
             viewModel.drawingDidChange(canvasView.drawing, pageID: id)
+            if let start = gestureStart, start.pageID == id {
+                // Erasing changes the drawing many times per gesture; register once it is over.
+                guard start.ended else { return }
+                gestureStart = nil
+                registerInkStep(pageID: id, from: start.drawing, to: canvasView.drawing)
+            } else {
+                registerInkStep(pageID: id, from: before, to: canvasView.drawing)
+            }
         }
 
         func canvasViewDidBeginUsingTool(_ canvasView: PKCanvasView) {
             controller.canvasView = canvasView
+            if let id = overlays.first(where: { $0.value.canvas === canvasView })?.key {
+                gestureStart = InkGestureStart(pageID: id, drawing: viewModel.drawing(forPage: id))
+            }
+        }
+
+        func canvasViewDidEndUsingTool(_ canvasView: PKCanvasView) {
+            guard let start = gestureStart, overlays[start.pageID]?.canvas === canvasView else { return }
+            if canvasView.drawing == start.drawing {
+                gestureStart?.ended = true // PencilKit may report the finished stroke after this
+            } else {
+                gestureStart = nil
+                registerInkStep(pageID: start.pageID, from: start.drawing, to: canvasView.drawing)
+            }
         }
 
         @objc func pageChanged() {
@@ -159,13 +190,72 @@ struct PDFCanvasView: UIViewRepresentable {
         func clearOverlays() {
             deactivateCanvas()
             overlays = [:]
+            gestureStart = nil
             controller.canvasView = nil
         }
     }
 }
 
+// MARK: - Ink undo
+// PencilKit's own undo steps point at a page canvas, which is released when its page scrolls away (and redo can't be
+// registered while it is out of the window). Ink undo is kept per page in the model instead, on the same stack as
+// markups, so it reaches any page.
+extension PDFCanvasView.Coordinator {
+    func registerInkStep(pageID: UUID, from old: PKDrawing, to new: PKDrawing) {
+        guard old != new, let undoManager = pdf.undoManager else { return }
+        undoManager.registerUndo(withTarget: self) { coordinator in
+            coordinator.restoreInk(old, replacing: new, pageID: pageID)
+        }
+        undoManager.setActionName("Drawing")
+    }
+
+    private func restoreInk(_ drawing: PKDrawing, replacing current: PKDrawing, pageID: UUID) {
+        guard viewModel.pages.contains(where: { $0.id == pageID }) else { return }
+        registerInkStep(pageID: pageID, from: current, to: drawing)
+        viewModel.drawingDidChange(drawing, pageID: pageID)
+        if let canvas = overlays[pageID]?.canvas {
+            isRestoringInk = true
+            canvas.drawing = drawing
+            isRestoringInk = false
+        }
+        pdf.reveal([pageID])
+    }
+}
+
+struct InkGestureStart {
+    let pageID: UUID
+    let drawing: PKDrawing
+    var ended = false
+}
+
+/// A page canvas whose undo commands go to the window's stack while PencilKit's own registrations are dropped.
+final class PDFPageInkView: PKCanvasView {
+    let undoForwarder = ForwardingUndoManager()
+
+    override var undoManager: UndoManager? { undoForwarder }
+}
+
+/// Forwards undo and redo to `target` and records nothing itself.
+final class ForwardingUndoManager: UndoManager {
+    weak var target: UndoManager?
+
+    override init() {
+        super.init()
+        disableUndoRegistration()
+    }
+
+    override var canUndo: Bool { target?.canUndo ?? false }
+    override var canRedo: Bool { target?.canRedo ?? false }
+    override var undoActionName: String { target?.undoActionName ?? "" }
+    override var redoActionName: String { target?.redoActionName ?? "" }
+    override var undoMenuItemTitle: String { target?.undoMenuItemTitle ?? super.undoMenuItemTitle }
+    override var redoMenuItemTitle: String { target?.redoMenuItemTitle ?? super.redoMenuItemTitle }
+    override func undo() { target?.undo() }
+    override func redo() { target?.redo() }
+}
+
 final class PDFPageCanvas: UIView {
-    let canvas = PKCanvasView()
+    let canvas = PDFPageInkView()
     let itemsOverlay = PageItemsOverlay()
     var snapper: ShapeSnapper?
     var pencilInteraction: PencilToolInteraction?

@@ -13,6 +13,15 @@ struct PDFMarkup: Codable, Equatable, Identifiable, Sendable {
             case .comment: .text
             }
         }
+
+        var actionName: String {
+            switch self {
+            case .highlight: "Highlight"
+            case .underline: "Underline"
+            case .strikeOut: "Strikethrough"
+            case .comment: "Comment"
+            }
+        }
     }
 
     var id = UUID()

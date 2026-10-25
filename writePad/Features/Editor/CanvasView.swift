@@ -5,9 +5,13 @@ import SwiftUI
 @MainActor
 final class CanvasController {
     weak var canvasView: PKCanvasView?
+    /// The PDF reader: its page canvases come and go with scrolling, but it stays in the window.
+    weak var pdfView: UIView?
 
-    func undo() { canvasView?.undoManager?.undo() }
-    func redo() { canvasView?.undoManager?.redo() }
+    private var undoManager: UndoManager? { pdfView?.undoManager ?? canvasView?.undoManager }
+
+    func undo() { undoManager?.undo() }
+    func redo() { undoManager?.redo() }
 }
 
 struct CanvasView: UIViewRepresentable {

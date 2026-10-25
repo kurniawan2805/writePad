@@ -29,6 +29,12 @@ Phase 2 work (see `PLAN.md` §4) split into tasks any agent can pick up. Read `A
 | T11 | Custom pen tray (favorite pens) replacing `PKToolPicker` | L | Codex after design | done (aeb1707; 161 unit + 14 UI tests passed across runs) |
 | T12 | Multiple windows / two notebooks side by side | M | Codex after design | done (31ff21e; 161 unit + 14 UI tests passed across runs) |
 | T13 | Fix imported PDF library preview retaining its source document during rendering | S | Codex | done (78d4145; 121 unit tests passed) |
+| T14 | PDF undo: ink undo after scrolling away, and undo for highlights/comments | L | Claude | done (see T14 notes; 164 unit + 16 UI tests) |
+| T15 | Export PDF markups as real PDF annotations (comment text kept, editable elsewhere) | L | Claude | open |
+| T16 | Tap a comment icon on a PDF page to read/edit it; drag to move it | S | Codex / cheaper | open |
+| T17 | No duplicate highlights on the same text; highlight color choice | S | Codex / cheaper | open |
+| T18 | Eraser mode choice: whole-stroke vs. pixel, in the pen tray | S | Codex / cheaper | open |
+| T19 | Measure ink latency on a 100+ page notebook (`drawingDidChange` splits every page) | M | needs real iPad | open |
 
 Verification: [T2–T6 simulator QA](T2-T6_QA.md).
 
@@ -117,3 +123,42 @@ The shared `PageThumbnailJob.render` retains its private `PDFDocument` with `wit
 rendering the PDF page. This fix and the library PDF preview regression check shipped with T8 in `78d4145`.
 All 121 unit tests passed, including PDF preview shape/content and cached PDF markup rendering checks;
 see [T8 QA](T8_QA.md) for the result bundle.
+
+## PDF annotation and ink audit (2026-10-25)
+Found by an audit of PDF markup and ink; T14 was reproduced in the simulator, the rest are from reading the code.
+
+### T14 PDF undo (L)
+Each PDF page has its own `PKCanvasView`; `PDFCanvasView.Coordinator` released the canvas when its page scrolled
+off screen, but PencilKit's undo steps in the window's undo manager still pointed at it. Undo after scrolling away
+did nothing (the change went to a canvas nobody saves), or changed a nearby page out of sight. Highlights,
+underlines, strikethroughs and comments registered no undo at all, so Undo after a highlight removed the last stroke.
+- Accept: draw on page 1, scroll to the last page, Undo → the reader returns to page 1 and the stroke is gone and
+  saved; Undo after a highlight removes the highlight; both redo.
+- Done: PDF ink undo is kept per page by `PDFCanvasView.Coordinator` (`registerInkStep`/`restoreInk`), one step per
+  tool gesture, on the window's undo stack next to markup steps (`PDFNotebook.setMarkups`). Page canvases forward
+  undo/redo there and drop PencilKit's own registrations (`ForwardingUndoManager`), so released canvases are fine.
+  Undo of a page out of sight scrolls to it. Page add/delete/move/bookmark clears the stack, as in notebooks.
+  `PDFUITests.testUndoReachesInkOnAnotherPageAndHighlights` checks the acceptance steps with real gestures.
+- Still a device check: three-finger undo/redo swipes and shape snap undo on PDF pages with Apple Pencil.
+
+### T15 Annotations in exported PDFs (L)
+`NotebookExporter` flattens markups into page content: comment text is lost and highlights can't be edited in other
+apps. Write them as PDF annotations (with ink still vector), keeping the flattened PNG path.
+
+### T16 Comment icons (S)
+PDFKit on iPadOS shows no popup for a text annotation. Handle `PDFViewAnnotationHit` for writePad comments: open
+`PDFCommentEditor`; long-press drag to move (update `bounds`, saved through `onChange`). Source PDF comments read-only.
+
+### T17 Highlights (S)
+`PDFNotebook.annotate` adds a second annotation when the same text is highlighted again (it gets darker). Skip a line
+whose bounds already carry the same kind. Add a color to `PDFMarkup` (decode with a default so older files load).
+
+### T18 Eraser modes (S)
+`PenTrayState.tool` always returns `PKEraserTool(.bitmap)`. Offer whole-stroke (`.vector`) too, persisted with the
+favorites; long-press the eraser button to switch.
+
+### T19 Long notebook ink latency (M, device)
+`EditorViewModel.drawingDidChange(_:)` splits the whole combined drawing and compares every page on each stroke, on
+the main actor. Measure with a 100+ page notebook full of ink on a real iPad before optimizing (e.g. only re-split
+strokes whose bounds changed).
+
