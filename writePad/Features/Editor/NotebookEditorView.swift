@@ -55,6 +55,13 @@ struct NotebookEditorView: View {
                     columnVisibility = .all
                 }
             }
+            Button {
+                viewModel.toggleBookmark(at: viewModel.currentPageIndex)
+            } label: {
+                let bookmarked = viewModel.pages[viewModel.currentPageIndex].isBookmarked
+                Label(bookmarked ? "Remove Bookmark" : "Bookmark Page", systemImage: bookmarked ? "star.fill" : "star")
+            }
+            .disabled(viewModel.isReadOnly)
             ExportMenu(viewModel: viewModel)
             Text("\(viewModel.currentPageIndex + 1) / \(viewModel.pages.count)")
                 .font(.subheadline.monospacedDigit())

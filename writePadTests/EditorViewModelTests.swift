@@ -122,6 +122,43 @@ struct EditorViewModelTests {
         #expect(editor.pages.count == 1)
     }
 
+    @Test func bookmarksSurviveReopenReorderingAndFiltering() throws {
+        let editor = try EditorViewModel.openDefault(store: store)
+        editor.addPage()
+        editor.addPage()
+        editor.toggleBookmark(at: 2)
+        let bookmarkedID = editor.pages[2].id
+        let version = editor.structureVersion
+        #expect(editor.pageIndices(bookmarkedOnly: true) == [2])
+        editor.scrollToPage(try #require(editor.pageIndices(bookmarkedOnly: true).first))
+        #expect(editor.currentPageIndex == 2)
+        editor.movePages(from: [2], to: 0)
+        #expect(editor.pageIndices(bookmarkedOnly: true) == [0])
+        #expect(editor.structureVersion > version)
+
+        let reopened = try reopen(editor)
+        #expect(reopened.pages[0].id == bookmarkedID)
+        #expect(reopened.pages[0].isBookmarked)
+        #expect(reopened.pageIndices(bookmarkedOnly: false) == [0, 1, 2])
+        reopened.toggleBookmark(at: 0)
+        let unstarred = try reopen(reopened)
+        #expect(unstarred.pageIndices(bookmarkedOnly: true).isEmpty)
+    }
+
+    @Test func readOnlyAndInvalidBookmarkChangesAreIgnored() throws {
+        var manifest = try store.createNotebook(title: "Future bookmarks")
+        manifest.version = NotebookManifest.currentVersion + 1
+        try store.saveManifest(manifest)
+        let editor = try EditorViewModel.openDefault(store: store)
+        editor.toggleBookmark(at: 0)
+        editor.toggleBookmark(at: -1)
+        editor.toggleBookmark(at: 99)
+        editor.saveNow()
+        #expect(!editor.pages[0].isBookmarked)
+        #expect(editor.structureVersion == 0)
+        #expect(!(try store.loadManifest(id: manifest.id)).pages[0].isBookmarked)
+    }
+
     @Test func thumbnailsExistForEveryPage() async throws {
         let editor = try EditorViewModel.openDefault(store: store)
         editor.addPage()

@@ -26,7 +26,7 @@ writePad brings handwritten notebooks and PDF annotation into one local library.
 | | What you can do |
 | --- | --- |
 | **Handwriting** | Use PencilKit's pens, pencil, marker, eraser, lasso, and ruler, with undo/redo and an optional finger-drawing mode. |
-| **Notebooks** | Write across vertically stacked pages, zoom and pan, and add, delete, or reorder pages using the thumbnail sidebar. |
+| **Notebooks** | Write across vertically stacked pages, zoom and pan, and add, delete, reorder, or bookmark pages using the thumbnail sidebar. |
 | **Paper** | Choose blank, lined, grid, dotted, Cornell, music staff, or weekly planner backgrounds. |
 | **Library** | Create notebooks and folders, rename and move notebooks, search titles, and sort by name or date. |
 | **PDF reading** | Import from Files or Open in writePad, then navigate with thumbnails, the document outline, and embedded-text search. |

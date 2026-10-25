@@ -3,33 +3,63 @@ import SwiftUI
 struct PageSidebarView: View {
     let viewModel: EditorViewModel
     @State private var pendingDeleteIndex: Int?
+    @State private var showsBookmarks = false
 
     var body: some View {
         ScrollViewReader { proxy in
-            List {
-                ForEach(Array(viewModel.pages.enumerated()), id: \.element.id) { index, page in
-                    Button {
-                        viewModel.scrollToPage(index)
-                    } label: {
-                        PageThumbnail(
-                            image: viewModel.thumbnails[page.id],
-                            number: index + 1,
-                            isCurrent: index == viewModel.currentPageIndex
-                        )
-                    }
-                    .buttonStyle(.plain)
-                    .listRowSeparator(.hidden)
-                    .id(page.id)
-                    .contextMenu { if !viewModel.isReadOnly { menu(forPageAt: index) } }
-                    .moveDisabled(viewModel.isReadOnly)
-                    .deleteDisabled(viewModel.isReadOnly)
+            VStack(spacing: 0) {
+                Picker("Page Filter", selection: $showsBookmarks) {
+                    Text("All").tag(false)
+                    Text("Bookmarked").tag(true)
                 }
-                .onMove(perform: viewModel.movePages)
-                .onDelete { offsets in
-                    if let index = offsets.first { requestDelete(at: index) }
+                .pickerStyle(.segmented)
+                .padding(.horizontal)
+                .padding(.vertical, 8)
+                List {
+                    ForEach(Array(viewModel.pages.enumerated()).filter {
+                        !showsBookmarks || $0.element.isBookmarked
+                    }, id: \.element.id) { index, page in
+                        Button {
+                            viewModel.scrollToPage(index)
+                        } label: {
+                            PageThumbnail(
+                                image: viewModel.thumbnails[page.id],
+                                number: index + 1,
+                                isCurrent: index == viewModel.currentPageIndex,
+                                isBookmarked: page.isBookmarked
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .listRowSeparator(.hidden)
+                        .id(page.id)
+                        .contextMenu {
+                            if !viewModel.isReadOnly {
+                                menu(forPageAt: index)
+                            }
+                        }
+                        .moveDisabled(viewModel.isReadOnly || showsBookmarks)
+                        .deleteDisabled(viewModel.isReadOnly)
+                    }
+                    .onMove { source, destination in
+                        if !showsBookmarks {
+                            viewModel.movePages(from: source, to: destination)
+                        }
+                    }
+                    .onDelete { offsets in
+                        let indices = viewModel.pageIndices(bookmarkedOnly: showsBookmarks)
+                        if let offset = offsets.first, indices.indices.contains(offset) {
+                            requestDelete(at: indices[offset])
+                        }
+                    }
+                }
+                .listStyle(.sidebar)
+                .overlay {
+                    if showsBookmarks && viewModel.pageIndices(bookmarkedOnly: true).isEmpty {
+                        ContentUnavailableView("No Bookmarked Pages", systemImage: "star",
+                                               description: Text("Star a page from its menu or the editor toolbar."))
+                    }
                 }
             }
-            .listStyle(.sidebar)
             .onChange(of: viewModel.currentPageIndex) { _, index in
                 guard viewModel.pages.indices.contains(index) else { return }
                 withAnimation { proxy.scrollTo(viewModel.pages[index].id) }
@@ -48,11 +78,17 @@ struct PageSidebarView: View {
         }
         .confirmationDialog(
             "Delete this page?",
-            isPresented: Binding(get: { pendingDeleteIndex != nil }, set: { if !$0 { pendingDeleteIndex = nil } }),
+            isPresented: Binding(get: { pendingDeleteIndex != nil }, set: {
+                if !$0 {
+                    pendingDeleteIndex = nil
+                }
+            }),
             titleVisibility: .visible
         ) {
             Button("Delete Page", role: .destructive) {
-                if let index = pendingDeleteIndex { viewModel.deletePage(at: index) }
+                if let index = pendingDeleteIndex {
+                    viewModel.deletePage(at: index)
+                }
             }
         } message: {
             Text("The writing and annotations on this page will be permanently deleted.")
@@ -61,6 +97,9 @@ struct PageSidebarView: View {
 
     @ViewBuilder
     private func menu(forPageAt index: Int) -> some View {
+        Button(viewModel.pages[index].isBookmarked ? "Remove Bookmark" : "Bookmark Page", systemImage: "star") {
+            viewModel.toggleBookmark(at: index)
+        }
         Button("Add Page After", systemImage: "plus") { viewModel.addPage(after: index) }
         Button("Move Up", systemImage: "arrow.up") {
             viewModel.movePages(from: [index], to: index - 1)
@@ -98,6 +137,7 @@ private struct PageThumbnail: View {
     let image: UIImage?
     let number: Int
     let isCurrent: Bool
+    let isBookmarked: Bool
 
     var body: some View {
         VStack(spacing: 6) {
@@ -115,15 +155,21 @@ private struct PageThumbnail: View {
                 RoundedRectangle(cornerRadius: 2)
                     .strokeBorder(isCurrent ? Color.accentColor : .clear, lineWidth: 3)
             }
-            Text("\(number)")
-                .font(.caption.monospacedDigit())
-                .foregroundStyle(isCurrent ? Color.accentColor : .secondary)
+            HStack(spacing: 4) {
+                if isBookmarked {
+                    Image(systemName: "star.fill").accessibilityHidden(true)
+                }
+                Text("\(number)")
+            }
+            .font(.caption.monospacedDigit())
+            .foregroundStyle(isCurrent ? Color.accentColor : .secondary)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 4)
         .contentShape(.rect)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Page \(number)")
+        .accessibilityValue(isBookmarked ? "Bookmarked" : "")
         .accessibilityAddTraits(isCurrent ? .isSelected : [])
     }
 }

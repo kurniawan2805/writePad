@@ -57,16 +57,18 @@ struct PageInfo: Codable, Equatable, Identifiable, Sendable {
     var id: UUID
     var background: PageBackground
     var pdfPageIndex: Int?
+    var isBookmarked: Bool
     var unknownFields: [String: JSONValue] = [:]
 
     private enum CodingKeys: String, CodingKey, CaseIterable {
-        case id, background, pdfPageIndex
+        case id, background, pdfPageIndex, isBookmarked
     }
 
-    init(id: UUID = UUID(), background: PageBackground = .blank, pdfPageIndex: Int? = nil) {
+    init(id: UUID = UUID(), background: PageBackground = .blank, pdfPageIndex: Int? = nil, isBookmarked: Bool = false) {
         self.id = id
         self.background = background
         self.pdfPageIndex = pdfPageIndex
+        self.isBookmarked = isBookmarked
     }
 
     init(from decoder: Decoder) throws {
@@ -74,6 +76,7 @@ struct PageInfo: Codable, Equatable, Identifiable, Sendable {
         id = try container.decode(UUID.self, forKey: .id)
         background = try container.decode(PageBackground.self, forKey: .background)
         pdfPageIndex = try container.decodeIfPresent(Int.self, forKey: .pdfPageIndex)
+        isBookmarked = try container.decodeIfPresent(Bool.self, forKey: .isBookmarked) ?? false
         unknownFields = try UnknownFields.decode(from: decoder, known: CodingKeys.allCases.map(\.rawValue))
     }
 
@@ -83,6 +86,7 @@ struct PageInfo: Codable, Equatable, Identifiable, Sendable {
         try container.encode(id, forKey: .id)
         try container.encode(background, forKey: .background)
         try container.encodeIfPresent(pdfPageIndex, forKey: .pdfPageIndex)
+        try container.encode(isBookmarked, forKey: .isBookmarked)
     }
 }
 

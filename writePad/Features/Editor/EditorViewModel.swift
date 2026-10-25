@@ -113,15 +113,11 @@ final class EditorViewModel {
                                    needsSave: load.needsSave, readOnly: load.isReadOnly)
     }
 
-    func dismissRecoveryNotice() {
-        recoveryNotice = nil
-    }
+    func dismissRecoveryNotice() { recoveryNotice = nil }
 
     // MARK: Ink
 
-    func drawing(forPage id: UUID) -> PKDrawing {
-        pageDrawings[id] ?? PKDrawing()
-    }
+    func drawing(forPage id: UUID) -> PKDrawing { pageDrawings[id] ?? PKDrawing() }
 
     func combinedDrawing() -> PKDrawing {
         layout.merge(pages.map { drawing(forPage: $0.id) })
@@ -157,9 +153,7 @@ final class EditorViewModel {
 
     // MARK: Pages
 
-    func pageDidBecomeVisible(_ index: Int) {
-        if currentPageIndex != index { currentPageIndex = index }
-    }
+    func pageDidBecomeVisible(_ index: Int) { if currentPageIndex != index { currentPageIndex = index } }
 
     func scrollToPage(_ index: Int) {
         guard pages.indices.contains(index) else { return }
@@ -199,6 +193,16 @@ final class EditorViewModel {
         structureDidChange()
     }
 
+    func toggleBookmark(at index: Int) {
+        guard !isReadOnly, pages.indices.contains(index) else { return }
+        manifest.pages[index].isBookmarked.toggle()
+        structureDidChange()
+    }
+
+    func pageIndices(bookmarkedOnly: Bool) -> [Int] {
+        pages.indices.filter { !bookmarkedOnly || pages[$0].isBookmarked }
+    }
+
     func pageHasInk(at index: Int) -> Bool {
         pages.indices.contains(index) && !drawing(forPage: pages[index].id).strokes.isEmpty
     }
@@ -224,13 +228,11 @@ final class EditorViewModel {
         isManifestDirty = true
         scheduleSave()
     }
-
 }
 
 // MARK: - Saving
 
 extension EditorViewModel {
-
     private var hasUnsavedChanges: Bool {
         !dirtyPageIDs.isEmpty || !deletedPageIDs.isEmpty || isManifestDirty || isPDFDirty
     }

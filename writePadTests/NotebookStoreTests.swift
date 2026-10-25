@@ -88,6 +88,7 @@ struct NotebookStoreTests {
 
         #expect(manifest.version == 1)
         #expect(manifest.pages.first?.pdfPageIndex == nil)
+        #expect(manifest.pages.first?.isBookmarked == false)
     }
 
     @Test func versionThreeManifestStillLoadsAndUpgradesOnEdit() throws {
@@ -95,6 +96,9 @@ struct NotebookStoreTests {
         let url = store.packageURL(for: original.id).appending(path: "manifest.json")
         var json = try #require(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
         json["version"] = 3
+        var oldPages = try #require(json["pages"] as? [[String: Any]])
+        oldPages[0].removeValue(forKey: "isBookmarked")
+        json["pages"] = oldPages
         try JSONSerialization.data(withJSONObject: json).write(to: url, options: .atomic)
 
         var loaded = try store.loadManifest(id: original.id)
