@@ -17,11 +17,11 @@ Phase 2 work (see `PLAN.md` §4) split into tasks any agent can pick up. Read `A
 | ID | Task | Diff. | Suggested owner | Status |
 |---|---|---|---|---|
 | T1 | Shape snap: draw and hold to straighten lines, ellipses, rectangles, triangles | L | Claude | done (see T1 notes) |
-| T2 | Page templates: Cornell, music staff, planner week | S | Codex / cheaper | open |
-| T3 | Bookmarks: star pages, Bookmarks filter in the page sidebar | S | Codex / cheaper | open |
-| T4 | CI: GitHub Actions build + unit tests on every push | S | Codex / cheaper | open |
-| T5 | `docs/DEVICE-CHECKS.md`: one checklist of every real-iPad check | S | Codex / cheaper | open |
-| T6 | Accessibility audit in UI tests (light, dark, large text) | S | Codex / cheaper | open |
+| T2 | Page templates: Cornell, music staff, planner week | S | Codex / cheaper | in progress (Codex, 2026-10-25) |
+| T3 | Bookmarks: star pages, Bookmarks filter in the page sidebar | S | Codex / cheaper | in progress (Codex, 2026-10-25) |
+| T4 | CI: GitHub Actions build + unit tests on every push | S | Codex / cheaper | in progress (Codex, 2026-10-25) |
+| T5 | `docs/DEVICE-CHECKS.md`: one checklist of every real-iPad check | S | Codex / cheaper | in progress (Codex, 2026-10-25) |
+| T6 | Accessibility audit in UI tests (light, dark, large text) | S | Codex / cheaper | in progress (Codex, 2026-10-25) |
 | T7 | Recently Deleted: 30-day soft delete for notebooks | M | Codex | open |
 | T8 | Thumbnail cache on disk (`thumb.png` per page), library cards read it | M | Codex | open |
 | T9 | Page items: text boxes and images on pages (format v4) | L | Claude | open |
