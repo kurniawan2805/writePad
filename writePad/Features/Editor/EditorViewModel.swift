@@ -4,6 +4,28 @@ import PDFKit
 import PencilKit
 import UIKit
 
+/// When autosave runs and how it backs off. Pure, so the timing rules can be tested without waiting.
+struct SaveTiming: Sendable, Equatable {
+    /// Quiet time after the last change before writing.
+    var delay: Duration = .seconds(1)
+    /// However often changes push the save back, it starts within this long of the first unsaved change.
+    var maxLatency: Duration = .seconds(5)
+    /// Wait before the first retry of a failed save; doubles with each failure.
+    var retryBase: Duration = .seconds(1)
+    var retryCap: Duration = .seconds(60)
+
+    /// `notBefore` is the end of a retry backoff: changes made while a save keeps failing don't retry sooner.
+    func deadline(now: ContinuousClock.Instant, firstUnsaved: ContinuousClock.Instant,
+                  notBefore: ContinuousClock.Instant? = nil) -> ContinuousClock.Instant {
+        let due = min(now + delay, firstUnsaved + maxLatency)
+        return notBefore.map { max(due, $0) } ?? due
+    }
+
+    func retryDelay(afterFailures failures: Int) -> Duration {
+        min(retryBase * (1 << min(max(failures - 1, 0), 6)), retryCap)
+    }
+}
+
 @MainActor
 @Observable
 final class EditorViewModel {
@@ -15,6 +37,8 @@ final class EditorViewModel {
     private(set) var manifest: NotebookManifest
     private(set) var thumbnails: [UUID: UIImage] = [:]
     private(set) var lastError: String?
+    /// What had to be repaired to open this notebook (damaged files set aside, a backup restored). Not a save error.
+    private(set) var recoveryNotice: String?
     /// Bumped whenever pages are added, removed, reordered or restyled, so the canvas rebuilds.
     private(set) var structureVersion = 0
     private(set) var scrollRequest: ScrollRequest?
@@ -29,17 +53,20 @@ final class EditorViewModel {
     @ObservationIgnored private var isManifestDirty = false
     @ObservationIgnored private var isPDFDirty = false
     @ObservationIgnored private var pendingSave: Task<Void, Never>?
+    /// When the oldest change not yet on disk was made; nil when everything is saved.
+    @ObservationIgnored private var unsavedSince: ContinuousClock.Instant?
+    @ObservationIgnored private var saveFailures = 0
+    @ObservationIgnored private var retryNotBefore: ContinuousClock.Instant?
+    @ObservationIgnored var saveTiming = SaveTiming()
 
     private let store: NotebookStore
 
-    /// Delay after the last change before writing to disk.
-    static let autosaveDelay: Duration = .seconds(1)
     static let thumbnailWidth: CGFloat = 140
 
     var pages: [PageInfo] { manifest.pages }
     private var layout: PageLayout { PageLayout(pageCount: pages.count) }
 
-    init(store: NotebookStore, manifest: NotebookManifest) throws {
+    init(store: NotebookStore, manifest: NotebookManifest, notices: [String] = [], needsSave: Bool = false) throws {
         self.store = store
         self.manifest = manifest
         let sourceURL = store.sourcePDFURL(for: manifest.id)
@@ -49,9 +76,15 @@ final class EditorViewModel {
         }
         self.pdf = hasSourcePDF
             ? try PDFNotebook(url: sourceURL, pages: manifest.pages, markups: store.loadPDFMarkups(notebookID: manifest.id)) : nil
-        self.pageDrawings = try Dictionary(uniqueKeysWithValues: manifest.pages.map { page in
-            (page.id, try store.loadDrawing(pageID: page.id, notebookID: manifest.id))
-        })
+        var notices = notices
+        var drawings: [UUID: PKDrawing] = [:]
+        for page in manifest.pages {
+            let load = try store.loadDrawingReport(pageID: page.id, notebookID: manifest.id)
+            drawings[page.id] = load.drawing
+            notices += load.notices
+        }
+        self.pageDrawings = drawings
+        self.recoveryNotice = notices.isEmpty ? nil : notices.joined(separator: " ")
         #if targetEnvironment(simulator)
         self.allowsFingerDrawing = true // the simulator has no Apple Pencil
         #else
@@ -65,12 +98,23 @@ final class EditorViewModel {
             self?.scheduleSave()
         }
         for page in manifest.pages { refreshThumbnail(for: page.id) }
+        if needsSave {
+            isManifestDirty = true
+            scheduleSave()
+        }
     }
 
     /// Opens the most recently edited notebook, or creates the first one.
     static func openDefault(store: NotebookStore = NotebookStore()) throws -> EditorViewModel {
-        let manifest = try store.listNotebooks().first ?? store.createNotebook(title: "My Notebook")
-        return try EditorViewModel(store: store, manifest: manifest)
+        guard let latest = try store.listNotebooks().first else {
+            return try EditorViewModel(store: store, manifest: store.createNotebook(title: "My Notebook"))
+        }
+        let load = try store.loadManifestReport(id: latest.id)
+        return try EditorViewModel(store: store, manifest: load.manifest, notices: load.notices, needsSave: load.needsSave)
+    }
+
+    func dismissRecoveryNotice() {
+        recoveryNotice = nil
     }
 
     // MARK: Ink
@@ -180,9 +224,16 @@ final class EditorViewModel {
     // MARK: Saving
 
     private func scheduleSave() {
+        let now = ContinuousClock.now
+        let since = unsavedSince ?? now
+        unsavedSince = since
+        schedule(at: saveTiming.deadline(now: now, firstUnsaved: since, notBefore: retryNotBefore))
+    }
+
+    private func schedule(at deadline: ContinuousClock.Instant) {
         pendingSave?.cancel()
         pendingSave = Task { [weak self] in
-            try? await Task.sleep(for: Self.autosaveDelay)
+            try? await Task.sleep(until: deadline, clock: .continuous)
             guard !Task.isCancelled else { return }
             self?.saveNow()
         }
@@ -191,7 +242,10 @@ final class EditorViewModel {
     func saveNow() {
         pendingSave?.cancel()
         pendingSave = nil
-        guard !dirtyPageIDs.isEmpty || !deletedPageIDs.isEmpty || isManifestDirty || isPDFDirty else { return }
+        guard !dirtyPageIDs.isEmpty || !deletedPageIDs.isEmpty || isManifestDirty || isPDFDirty else {
+            unsavedSince = nil
+            return
+        }
         // Keep a failed manifest write retryable even after drawing files have been saved.
         isManifestDirty = true
         do {
@@ -213,8 +267,17 @@ final class EditorViewModel {
             }
             deletedPageIDs.removeAll()
             lastError = nil
+            unsavedSince = nil
+            saveFailures = 0
+            retryNotBefore = nil
         } catch {
             lastError = error.localizedDescription
+            // Everything stays dirty; try again on our own, backing off so a full disk isn't hammered.
+            saveFailures += 1
+            let retryAt = ContinuousClock.now + saveTiming.retryDelay(afterFailures: saveFailures)
+            retryNotBefore = retryAt
+            unsavedSince = unsavedSince ?? .now
+            schedule(at: retryAt)
         }
     }
 

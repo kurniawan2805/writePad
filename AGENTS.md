@@ -52,12 +52,15 @@ TestSupport/                shared by both test targets (e.g. PDFFixture builds 
 
 ## Rules
 - **Never edit `writePad.xcodeproj` by hand.** Change `project.yml`, then run `xcodegen generate`. The generated project is committed so it opens with a double-click.
-- **Never lose ink.** All writes use `.atomic`; autosave is debounced (1 s) and flushed when the scene leaves `.active`. Keep both paths working when touching the editor.
+- **Never lose ink.** All writes use `.atomic`; save order is ink → annotations → manifest → delete removed pages. Autosave is debounced (1 s) but starts within 5 s of the first unsaved change, retries failures with backoff (`SaveTiming`), and is flushed when the scene leaves `.active`. Keep all of these working when touching the editor.
 - **File format** (`<uuid>.writepad/`, currently version 3):
   - `manifest.json`: title, dates (ISO 8601 with milliseconds), ordered pages. A page with `pdfPageIndex` shows that page of `source.pdf`; without it, it is paper.
   - `pages/<pageId>.drawing`: `PKDrawing.dataRepresentation()` in page coordinates.
   - `source.pdf`: the imported original, never modified.
   - `annotations.json`: highlights, underlines, strikethroughs and comments (`PDFMarkup`, PDF-space bounds). Markups of deleted pages are pruned.
+  - `manifest.prev.json`: the previous valid manifest, read when `manifest.json` is missing or undecodable.
+  - `*.corrupt`: undecodable files are renamed, never overwritten or deleted. A file that exists but can't be *read* is not damage: loading stops with an error instead of falling back.
+  - Drawing files newer than the manifest but not listed in it are recovered as pages (a save crashed between ink and manifest).
   - Any format change must bump `NotebookManifest.currentVersion` and keep loading older versions.
 - **The library index is a cache.** Packages on disk are the source of truth for titles and dates; SwiftData only adds folders. `LibraryViewModel.refresh()` re-syncs from packages.
 - **UI tests must not touch real data.** Debug builds honor `WRITEPAD_STORAGE_NAMESPACE` (see `StorageLocation`); `XCUIApplication.isolated()` sets it. Launch the app before `app.open(url)` so the namespace applies.

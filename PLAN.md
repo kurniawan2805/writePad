@@ -133,6 +133,23 @@ Usage, storage format, simulator results, and remaining Pencil checks: [Mileston
 
 Simulator verification and the remaining device checklist: [Milestone 5 QA](docs/MILESTONE5_QA.md).
 
+### Milestone 6 — Storage hardening
+Goal: *"a crash, a full disk, or a damaged file never costs ink, and a failed save recovers on its own."*
+Rationale and the OwlLuna code these ideas come from: [OwlLuna audit](docs/OWLLUNA_AUDIT.md). Re-implement from the ideas; if any code is copied, keep OwlLuna's MIT notice.
+- [x] Quarantine undecodable manifest / drawing files as `*.corrupt` instead of failing or overwriting them
+- [x] Keep `manifest.prev.json` and fall back to it when `manifest.json` can't be decoded
+- [x] Reject a `PKDrawing` that decodes as empty but lacks PencilKit's header (it returns an empty drawing instead of throwing)
+- [x] Cap save latency: debounce stays 1 s, but a pending save starts at most ~5 s after the first unsaved edit (today every edit restarts the timer)
+- [x] Retry failed saves with backoff (1 s doubling, capped at 60 s) and show a non-blocking notice; keep pages dirty until written
+- [x] Recover pages whose drawing file is newer than the manifest but missing from it (crash between the two writes)
+- [ ] Move save IO and thumbnail refresh off the main actor (`saveNow` currently writes synchronously on `@MainActor`)
+- [ ] Preserve unknown manifest fields on load/save so newer files survive an older build; open newer-than-supported manifests read-only (bump `NotebookManifest.currentVersion` if the format changes)
+- [x] Tests in `writePadTests/`: corrupt manifest, corrupt drawing, `prev` fallback, orphan recovery, retry after a failed write, latency cap (`NotebookStoreRecoveryTests`, `AutosaveSafetyTests`)
+- [ ] Test on real iPad: kill the app mid-stroke and mid-save, fill storage, confirm nothing is lost (Pencil/device only)
+- ✅ Done when: with a corrupted manifest or a forced write failure, the notebook still opens with all ink and the app reports what happened.
+
+Order of work: corrupt-file handling and `prev` fallback first, then latency cap and retry, then orphan recovery; the main-thread and unknown-field items last because they change more code.
+
 ### Out of scope for MVP
 Sync, handwriting search/OCR, shapes, audio, templates marketplace, collaboration, Mac app.
 

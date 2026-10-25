@@ -142,8 +142,8 @@ final class LibraryViewModel {
     }
 
     func openNotebook(_ notebook: LibraryNotebook) throws {
-        let manifest = try store.loadManifest(id: notebook.id)
-        editor = try EditorViewModel(store: store, manifest: manifest)
+        let load = try store.loadManifestReport(id: notebook.id)
+        editor = try EditorViewModel(store: store, manifest: load.manifest, notices: load.notices, needsSave: load.needsSave)
     }
 
     func closeNotebook() throws {

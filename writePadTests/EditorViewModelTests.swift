@@ -27,6 +27,43 @@ struct EditorViewModelTests {
         #expect(reopened.drawing(forPage: reopened.pages[0].id).strokes.count == 1)
     }
 
+    @Test func damagedPageDrawingStillOpensWithANotice() throws {
+        let editor = try EditorViewModel.openDefault(store: store)
+        editor.drawingDidChange(NotebookStoreTests.sampleDrawing())
+        editor.saveNow()
+        let pageID = editor.pages[0].id
+        let file = store.packageURL(for: editor.manifest.id).appending(path: "pages/\(pageID.uuidString).drawing")
+        try Data("damaged".utf8).write(to: file)
+
+        let reopened = try EditorViewModel.openDefault(store: store)
+
+        #expect(reopened.drawing(forPage: pageID).strokes.isEmpty)
+        #expect(reopened.recoveryNotice != nil)
+        #expect(FileManager.default.fileExists(atPath: file.appendingPathExtension("corrupt").path(percentEncoded: false)))
+        reopened.dismissRecoveryNotice()
+        #expect(reopened.recoveryNotice == nil)
+    }
+
+    @Test func pageLeftByACrashedSaveReturnsAndIsSavedIntoTheManifest() throws {
+        let editor = try EditorViewModel.openDefault(store: store)
+        editor.saveNow()
+        // A crash after the drawing was written but before the manifest was: the drawing is on disk, the page isn't listed.
+        let pageID = UUID()
+        let file = store.packageURL(for: editor.manifest.id).appending(path: "pages/\(pageID.uuidString).drawing")
+        try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try NotebookStoreTests.sampleDrawing().dataRepresentation().write(to: file)
+        let written = Date.now.addingTimeInterval(60)
+        try FileManager.default.setAttributes([.modificationDate: written], ofItemAtPath: file.path(percentEncoded: false))
+
+        let reopened = try EditorViewModel.openDefault(store: store)
+
+        #expect(reopened.pages.count == 2)
+        #expect(reopened.drawing(forPage: pageID).strokes.count == 1)
+        #expect(reopened.recoveryNotice != nil)
+        reopened.saveNow()
+        #expect(try store.loadManifest(id: reopened.manifest.id).pages.map(\.id).contains(pageID))
+    }
+
     @Test func inkOnSecondPageIsSavedToThatPage() throws {
         let editor = try EditorViewModel.openDefault(store: store)
         editor.addPage()

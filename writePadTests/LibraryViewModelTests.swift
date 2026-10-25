@@ -180,7 +180,7 @@ struct LibraryViewModelTests {
         #expect(reopened.notebooks.first?.folderID == folder.id)
     }
 
-    @Test func unreadableInkPreventsOpeningWithoutOverwritingFile() throws {
+    @Test func unreadableInkOpensEmptyPageAndKeepsTheDamagedFile() throws {
         try library.createNotebook(title: "Damaged", background: .blank)
         let notebook = try #require(library.notebooks.first)
         let manifest = try store.loadManifest(id: notebook.id)
@@ -188,10 +188,14 @@ struct LibraryViewModelTests {
         let original = Data([0xFF, 0xFF, 0xFF])
         try original.write(to: file, options: .atomic)
 
-        #expect(throws: (any Error).self) { try library.openNotebook(notebook) }
+        try library.openNotebook(notebook)
 
-        #expect(library.editor == nil)
-        #expect(try Data(contentsOf: file) == original)
+        let editor = try #require(library.editor)
+        #expect(editor.drawing(forPage: manifest.pages[0].id).strokes.isEmpty)
+        #expect(editor.recoveryNotice != nil)
+        // The damaged bytes are set aside, not overwritten, so a later save can't destroy them.
+        #expect(try Data(contentsOf: file.appendingPathExtension("corrupt")) == original)
+        #expect(!FileManager.default.fileExists(atPath: file.path(percentEncoded: false)))
     }
 
     @Test func failedSaveKeepsEditorOpenUntilRetrySucceeds() throws {

@@ -30,6 +30,7 @@ struct NotebookEditorView: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar { editorToolbar }
                 .overlay(alignment: .bottom) { saveErrorBanner }
+                .overlay(alignment: .top) { recoveryBanner }
         }
         .navigationSplitViewStyle(.prominentDetail)
     }
@@ -83,6 +84,22 @@ struct NotebookEditorView: View {
             }
         } label: {
             Label("Paper", systemImage: current.systemImage)
+        }
+    }
+
+    @ViewBuilder
+    private var recoveryBanner: some View {
+        if let notice = viewModel.recoveryNotice {
+            HStack {
+                Label(notice, systemImage: "exclamationmark.triangle")
+                Button("OK") { viewModel.dismissRecoveryNotice() }
+                    .buttonStyle(.bordered)
+            }
+                .font(.footnote)
+                .padding(8)
+                .background(.orange.opacity(0.9), in: .capsule)
+                .foregroundStyle(.white)
+                .padding()
         }
     }
 
