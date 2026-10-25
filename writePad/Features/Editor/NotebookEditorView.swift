@@ -2,6 +2,8 @@ import SwiftUI
 
 struct NotebookEditorView: View {
     @Bindable var viewModel: EditorViewModel
+    @Environment(\.openWindow) private var openWindow
+    @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     var onClose: (() -> Void)?
     @State private var canvasController = CanvasController()
@@ -72,6 +74,18 @@ struct NotebookEditorView: View {
                 Label(bookmarked ? "Remove Bookmark" : "Bookmark Page", systemImage: bookmarked ? "star.fill" : "star")
             }
             .disabled(viewModel.isReadOnly)
+            Menu("Windows", systemImage: "rectangle.on.rectangle") {
+                Button("Open in New Window", systemImage: "rectangle.on.rectangle") {
+                    viewModel.saveNow()
+                    if viewModel.lastError == nil {
+                        openWindow(value: NotebookWindowRequest(notebookID: viewModel.manifest.id))
+                    }
+                }
+                Button("New Library Window", systemImage: "macwindow.badge.plus") {
+                    openWindow(value: NotebookWindowRequest())
+                }
+            }
+            .disabled(!supportsMultipleWindows)
             ExportMenu(viewModel: viewModel)
             pagePosition
             if viewModel.isReadOnly {

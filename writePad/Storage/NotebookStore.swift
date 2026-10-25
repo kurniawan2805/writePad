@@ -52,7 +52,6 @@ struct NotebookStore: Sendable {
     }
 
     // MARK: Paths
-
     func packageURL(for notebookID: UUID) -> URL {
         rootURL.appending(path: "\(notebookID.uuidString).\(Self.packageExtension)", directoryHint: .isDirectory)
     }
@@ -74,7 +73,6 @@ struct NotebookStore: Sendable {
     }
 
     // MARK: Notebooks
-
     @discardableResult
     func createNotebook(title: String, background: PageBackground = .blank) throws -> NotebookManifest {
         let manifest = NotebookManifest(title: title, pages: [PageInfo(background: background)])
@@ -130,16 +128,16 @@ struct NotebookStore: Sendable {
     /// aside. A manifest from a newer version is never set aside or replaced by an older backup: it opens read-only,
     /// or throws `unsupportedVersion` when this build can't decode it at all. With
     /// `recoveringPages`, drawings written just before a crash that the manifest never listed are added as pages.
-    func loadManifestReport(id: UUID, recoveringPages: Bool = true) throws -> ManifestLoad {
+    func loadManifestReport(id: UUID, recoveringPages: Bool = true, repairingFiles: Bool = true) throws -> ManifestLoad {
         let primary = manifestURL(for: id), backup = previousManifestURL(for: id)
         var setAside: [String] = []
         var notices: [String] = []
         for url in [primary, backup] {
             guard let data = try readIfPresent(url),
-                  let manifest = try decodeManifest(data, at: url, setAside: &setAside) else { continue }
+                  let manifest = try decodeManifest(data, at: url, setAside: &setAside, repairingFiles: repairingFiles) else { continue }
             if url == backup {
                 // Put the backup in place so the next load, and the next save's backup, start from a valid file.
-                try? data.write(to: primary, options: .atomic)
+                if repairingFiles { try? data.write(to: primary, options: .atomic) }
                 notices.append("The notebook's manifest was damaged; the version from before the last save was restored.")
             }
             if !setAside.isEmpty {
@@ -234,7 +232,6 @@ struct NotebookStore: Sendable {
     }
 
     // MARK: Drawings
-
     func loadPDFMarkups(notebookID: UUID) throws -> [PDFMarkup] {
         let url = packageURL(for: notebookID).appending(path: "annotations.json")
         guard FileManager.default.fileExists(atPath: url.path(percentEncoded: false)) else { return [] }
@@ -254,13 +251,14 @@ struct NotebookStore: Sendable {
 
     /// Like `loadDrawing`, but a damaged file is set aside and the page opens empty, so one bad page never stops a
     /// notebook from opening. If the file can't be set aside this throws, rather than risk a later save replacing it.
-    func loadDrawingReport(pageID: UUID, notebookID: UUID) throws -> DrawingLoad {
+    func loadDrawingReport(pageID: UUID, notebookID: UUID, repairingFiles: Bool = true) throws -> DrawingLoad {
         let url = drawingURL(pageID: pageID, notebookID: notebookID)
         guard FileManager.default.fileExists(atPath: url.path(percentEncoded: false)) else {
             return DrawingLoad(drawing: PKDrawing())
         }
         let data = try Data(contentsOf: url)
         if let drawing = try? Self.decodeDrawing(data) { return DrawingLoad(drawing: drawing) }
+        guard repairingFiles else { throw CocoaError(.fileReadCorruptFile) }
         let moved = try quarantine(url)
         return DrawingLoad(drawing: PKDrawing(), notices: [
             "A page's ink couldn't be read. The damaged file was kept as pages/\(moved.lastPathComponent)."
@@ -322,13 +320,15 @@ extension NotebookStore {
     /// Decodes a manifest file. An undecodable one is set aside (its new name added to `setAside`) and nil returned,
     /// except that a newer build's manifest this build can't decode throws `unsupportedVersion` and stays untouched:
     /// that is a format this build doesn't know, not damage.
-    private func decodeManifest(_ data: Data, at url: URL, setAside: inout [String]) throws -> NotebookManifest? {
+    private func decodeManifest(_ data: Data, at url: URL, setAside: inout [String],
+                                repairingFiles: Bool) throws -> NotebookManifest? {
         do {
             return try Self.decoder.decode(NotebookManifest.self, from: data)
         } catch {
             if let version = Self.formatVersion(of: data), version > NotebookManifest.currentVersion {
                 throw StoreError.unsupportedVersion(version)
             }
+            guard repairingFiles else { throw error }
             if let moved = try? quarantine(url) { setAside.append(moved.lastPathComponent) }
             return nil
         }

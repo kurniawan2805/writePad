@@ -3,6 +3,8 @@ import UniformTypeIdentifiers
 
 struct LibraryView: View {
     @Bindable var viewModel: LibraryViewModel
+    @Environment(\.openWindow) private var openWindow
+    @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var form: LibraryItemForm.Request?
     @State private var notebookToDelete: LibraryNotebook?
@@ -200,6 +202,11 @@ struct LibraryView: View {
     @ToolbarContentBuilder
     private var libraryToolbar: some ToolbarContent {
         ToolbarItemGroup(placement: .topBarTrailing) {
+            if supportsMultipleWindows {
+                Button("New Window", systemImage: "macwindow.badge.plus") {
+                    openWindow(value: NotebookWindowRequest())
+                }
+            }
             Button("Import PDF", systemImage: "square.and.arrow.down") { isImportingPDF = true }
             Menu("Sort", systemImage: "arrow.up.arrow.down") {
                 Picker("Sort by", selection: $viewModel.sortOrder) {
@@ -219,6 +226,11 @@ struct LibraryView: View {
             Button("Restore", systemImage: "arrow.uturn.backward") { perform { try viewModel.restoreNotebook(notebook) } }
             Button("Delete Now", systemImage: "trash", role: .destructive) { notebookToDelete = notebook }
         } else {
+            if supportsMultipleWindows {
+                Button("Open in New Window", systemImage: "rectangle.on.rectangle") {
+                    openWindow(value: NotebookWindowRequest(notebookID: notebook.id))
+                }
+            }
             Button("Rename", systemImage: "pencil") { showForm(.renameNotebook(notebook)) }
             Menu("Move to Folder", systemImage: "folder") {
                 Button("No Folder") { perform { try viewModel.moveNotebook(notebook, to: nil) } }

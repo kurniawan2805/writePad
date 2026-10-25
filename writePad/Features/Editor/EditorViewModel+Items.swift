@@ -2,6 +2,15 @@ import PencilKit
 import UIKit
 
 extension EditorViewModel {
+    struct ScrollRequest: Equatable {
+        let id = UUID()
+        let pageIndex: Int
+    }
+
+    func combinedDrawing() -> PKDrawing {
+        PageLayout(pageCount: pages.count).merge(pages.map { drawing(forPage: $0.id) })
+    }
+
     func export(as format: NotebookExportFormat, directory: URL = .temporaryDirectory) async throws -> URL {
         let snapshot = NotebookExport(
             manifest: manifest,

@@ -23,9 +23,8 @@ final class LibraryViewModel {
 
     // The context alone does not keep its container alive.
     private let container: ModelContainer
-    private var context: ModelContext {
-        container.mainContext
-    }
+    private let context: ModelContext
+    private let access = NotebookAccessRegistry.shared
 
     private(set) var thumbnailGeneration = 0
     private let store: NotebookStore
@@ -33,6 +32,7 @@ final class LibraryViewModel {
     init(container: ModelContainer, store: NotebookStore = NotebookStore()) {
         self.container = container
         self.store = store
+        self.context = ModelContext(container)
         context.autosaveEnabled = false
     }
 
@@ -88,7 +88,7 @@ final class LibraryViewModel {
                 record.deletedAt = nil
             }
         }
-        try saveMetadata()
+        try saveMetadata(notify: false)
         deletedNotebooks = try context.fetch(FetchDescriptor<LibraryNotebook>()).filter {
             $0.deletedAt != nil && FileManager.default.fileExists(atPath: store.trashStore.packageURL(for: $0.id).path)
         }
@@ -138,11 +138,13 @@ final class LibraryViewModel {
     }
 
     func renameNotebook(_ notebook: LibraryNotebook, title: String) throws {
+        try access.ensureClosed(store.packageURL(for: notebook.id))
         var manifest = try store.loadManifest(id: notebook.id)
         manifest.title = try validatedTitle(title)
         manifest.updatedAt = .now
         try store.saveManifest(manifest)
         try refresh()
+        access.libraryDidChange()
     }
 
     func renameFolder(_ folder: LibraryFolder, title: String) throws {
@@ -157,6 +159,7 @@ final class LibraryViewModel {
     }
 
     func deleteNotebook(_ notebook: LibraryNotebook) throws {
+        try access.ensureClosed(store.packageURL(for: notebook.id))
         try store.trashNotebook(id: notebook.id)
         notebook.deletedAt = .now
         try saveMetadata()
@@ -190,17 +193,41 @@ final class LibraryViewModel {
         try refresh()
     }
 
-    func openNotebook(_ notebook: LibraryNotebook) throws {
-        let load = try store.loadManifestReport(id: notebook.id)
-        editor = try EditorViewModel(store: store, manifest: load.manifest, notices: load.notices,
-                                     needsSave: load.needsSave, readOnly: load.isReadOnly)
+    func openNotebook(_ notebook: LibraryNotebook) throws { try openNotebook(id: notebook.id) }
+
+    func openNotebook(id: UUID) throws {
+        if editor?.manifest.id == id { return }
+        if editor != nil {
+            try closeNotebook()
+            guard editor == nil else { return }
+        }
+        let writable = try access.prepareToOpen(store.packageURL(for: id))
+        let load = try store.loadManifestReport(id: id, recoveringPages: writable, repairingFiles: writable)
+        var notices = load.notices
+        if !writable {
+            notices.append("This notebook is open in another window. Close and reopen it here to edit after the other window closes.")
+        }
+        let opened = try EditorViewModel(store: store, manifest: load.manifest, notices: notices,
+                                        needsSave: load.needsSave, readOnly: load.isReadOnly || !writable)
+        access.register(opened)
+        editor = opened
     }
 
     func closeNotebook() throws {
-        editor?.saveNow()
-        guard editor?.lastError == nil else { return }
+        guard let editor else { return }
+        guard editor.closeIfSaved() else { return }
+        access.release(editor)
+        self.editor = nil
         try refresh()
-        editor = nil
+        access.libraryDidChange()
+    }
+
+    func disconnect() {
+        guard let editor else { return }
+        editor.closeIfSaved()
+        access.release(editor, disconnected: true)
+        self.editor = nil
+        access.libraryDidChange()
     }
 
     func loadThumbnail(for notebook: LibraryNotebook) async {
@@ -217,9 +244,10 @@ final class LibraryViewModel {
         }
     }
 
-    private func saveMetadata() throws {
+    private func saveMetadata(notify: Bool = true) throws {
         do {
             try context.save()
+            if notify { access.libraryDidChange() }
         } catch {
             context.rollback()
             throw error

@@ -21,7 +21,7 @@ Before loading an editor, consult a main-actor registry keyed by standardized pa
 is retained by the registry until an explicit successful synchronous flush and close. A second opener
 flushes the writer before reading disk and opens an immutable read-only editor; failed flush stops the
 open. Read-only editors do not acquire write ownership and are never promoted in place: close/reopen
-to acquire it. Independent notebooks have independent writers. Every library rejects rename/delete
+to acquire it. Closing revokes the old editor's write capability before releasing ownership, so late canvas callbacks cannot restart its autosave. Independent notebooks have independent writers. Every library rejects rename/delete
 for any notebook with an open writer; folder metadata stays independent of package writes.
 
 Scene background/inactivation flushes its own editor. Scene disconnection flushes and releases a

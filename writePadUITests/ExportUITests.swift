@@ -24,6 +24,7 @@ final class ExportUITests: XCTestCase {
 
         for option in ["Export PDF", "Export Current Page as PNG"] {
             app.buttons["Export"].tap()
+            XCTAssertTrue(app.buttons[option].waitForExistence(timeout: 5))
             app.buttons[option].tap()
             XCTAssertTrue(app.cells["Copy"].waitForExistence(timeout: 15))
             let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
@@ -31,7 +32,10 @@ final class ExportUITests: XCTestCase {
             attachment.lifetime = .keepAlways
             add(attachment)
             app.buttons["Close"].firstMatch.tap()
-            XCTAssertTrue(app.buttons["Export"].waitForExistence(timeout: 5))
+            XCTAssertTrue(app.cells["Copy"].waitForNonExistence(timeout: 5))
+            let exportReady = expectation(for: NSPredicate(format: "hittable == true"),
+                                          evaluatedWith: app.buttons["Export"])
+            wait(for: [exportReady], timeout: 5)
         }
         app.buttons["Library"].tap()
         XCTAssertTrue(card.waitForExistence(timeout: 5))

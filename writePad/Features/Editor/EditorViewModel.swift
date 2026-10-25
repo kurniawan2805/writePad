@@ -7,11 +7,6 @@ import UIKit
 @MainActor
 @Observable
 final class EditorViewModel {
-    struct ScrollRequest: Equatable {
-        let id = UUID()
-        let pageIndex: Int
-    }
-
     private(set) var manifest: NotebookManifest
     private(set) var thumbnails: [UUID: UIImage] = [:]
     private(set) var lastError: String?
@@ -29,8 +24,10 @@ final class EditorViewModel {
     let penTray = PenTrayState()
     let itemUndoManager = UndoManager()
     let pdf: PDFNotebook?
-    /// True when a newer build saved this notebook: it is shown, but nothing in it changes and nothing is written.
-    let isReadOnly: Bool
+    /// Newer formats and notebooks owned by another window can be viewed without changing their files.
+    private let openedReadOnly: Bool
+    private(set) var isClosed = false
+    var isReadOnly: Bool { openedReadOnly || isClosed }
 
     /// Page-local drawings, keyed by page ID. Not observed: it changes on every stroke.
     @ObservationIgnored private var pageDrawings: [UUID: PKDrawing]
@@ -45,7 +42,7 @@ final class EditorViewModel {
     @ObservationIgnored private var retryNotBefore: ContinuousClock.Instant?
     @ObservationIgnored var saveTiming = SaveTiming()
 
-    /// Serial, so writes never overlap or reorder. Autosaves run on it in the background; `saveNow` waits its turn.
+    /// Serializes background autosaves; `saveNow` waits its turn.
     @ObservationIgnored private let writeQueue = DispatchQueue(label: "writePad.notebook-save", qos: .utility)
     @ObservationIgnored private var isWriting = false
     /// What the running background write carries, so a flush can include it.
@@ -67,7 +64,8 @@ final class EditorViewModel {
          readOnly: Bool = false) throws {
         self.store = store
         self.manifest = manifest
-        self.isReadOnly = readOnly || manifest.isNewerThanSupported
+        let isReadOnly = readOnly || manifest.isNewerThanSupported
+        self.openedReadOnly = isReadOnly
         let sourceURL = store.sourcePDFURL(for: manifest.id)
         let hasSourcePDF = FileManager.default.fileExists(atPath: sourceURL.path(percentEncoded: false))
         if manifest.pages.contains(where: { $0.pdfPageIndex != nil }), !hasSourcePDF {
@@ -80,7 +78,7 @@ final class EditorViewModel {
         var loadedItems: [UUID: [PageItem]] = [:]
         var loadedAssets: [UUID: Data] = [:]
         for page in manifest.pages {
-            let load = try store.loadDrawingReport(pageID: page.id, notebookID: manifest.id)
+            let load = try store.loadDrawingReport(pageID: page.id, notebookID: manifest.id, repairingFiles: !isReadOnly)
             drawings[page.id] = load.drawing
             let items = try store.loadItems(page: page, notebookID: manifest.id)
             loadedItems[page.id] = items
@@ -120,10 +118,6 @@ final class EditorViewModel {
     // MARK: Ink
 
     func drawing(forPage id: UUID) -> PKDrawing { pageDrawings[id] ?? PKDrawing() }
-
-    func combinedDrawing() -> PKDrawing {
-        layout.merge(pages.map { drawing(forPage: $0.id) })
-    }
 
     func drawingDidChange(_ combined: PKDrawing) {
         guard !isReadOnly else { return }
@@ -216,7 +210,6 @@ final class EditorViewModel {
 }
 
 // MARK: - Saving
-
 extension EditorViewModel {
     private var hasUnsavedChanges: Bool {
         !dirtyPageIDs.isEmpty || !deletedPageIDs.isEmpty || isManifestDirty || isPDFDirty
@@ -291,6 +284,15 @@ extension EditorViewModel {
         case let .success(written): saveSucceeded(written, pages: changes.pages)
         case let .failure(error): saveFailed(error, changes: changes)
         }
+    }
+
+    /// Revoke old canvas callbacks before another window can acquire this notebook.
+    @discardableResult
+    func closeIfSaved() -> Bool {
+        saveNow()
+        guard lastError == nil else { return false }
+        isClosed = true
+        return true
     }
 
     /// Captures what to write and marks it clean. Changes made while it is written count as new changes.

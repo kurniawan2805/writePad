@@ -168,7 +168,7 @@ Sync, handwriting search/OCR, shapes, audio, templates marketplace, collaboratio
 - Lasso: move, resize, recolor, copy between pages
 - [x] Page templates: Cornell, weekly planner, music staff (`docs/TASKS.md` T2)
 - [ ] Custom page sizes and infinite canvas option
-- Tabs / split view (two notebooks side by side), multiple windows
+- [x] Multiple windows with independent notebooks and a single-writer guard (`docs/TASKS.md` T12; [QA](docs/T12_QA.md))
 - [x] Page bookmarks and sidebar filter (`docs/TASKS.md` T3)
 - [x] Recently Deleted: restore notebooks for 30 days, or delete permanently (`docs/TASKS.md` T7; [QA](docs/T7_QA.md))
 - [ ] Page links and outline for notebooks
