@@ -117,7 +117,7 @@ struct PDFNotebookTests {
         #expect(reopened.pdf?.markups.isEmpty == true)
         reopened.pdf?.addComment("New format", pageID: manifest.pages[0].id)
         reopened.saveNow()
-        #expect(try store.loadManifest(id: manifest.id).version == 3)
+        #expect(try store.loadManifest(id: manifest.id).version == NotebookManifest.currentVersion)
     }
 
     @Test(arguments: [0, 90, 180, 270])

@@ -173,6 +173,39 @@ struct NotebookExporterTests {
         #expect(PDFDocument(url: url)?.pageCount == 101)
     }
 
+    @Test(arguments: [PageBackground.cornell, .music, .plannerWeek])
+    func pageTemplatesAppearInThumbnailsPDFAndPNG(background: PageBackground) throws {
+        let page = PageInfo(background: background)
+        let manifest = NotebookManifest(title: background.rawValue, pages: [page])
+        let snapshot = NotebookExport(manifest: manifest, drawings: [:], sourcePDFURL: store.sourcePDFURL(for: manifest.id))
+        let point: CGPoint
+        switch background {
+        case .cornell: point = CGPoint(x: PageLayout.pageSize.width * 0.25, y: 200)
+        case .music: point = CGPoint(x: 200, y: 48)
+        default: point = CGPoint(x: 200, y: 40)
+        }
+        let pdfURL = try NotebookExporter.export(snapshot, as: .pdf, directory: store.rootURL)
+        let document = try #require(PDFDocument(url: pdfURL))
+        let pdfPage = try #require(document.page(at: 0))
+        let pngURL = try NotebookExporter.export(snapshot, as: .png(pageID: page.id), directory: store.rootURL)
+        let images = [
+            PageBackgroundRenderer.thumbnail(background: background, drawing: PKDrawing(), width: 140),
+            pdfPage.thumbnail(of: PageLayout.pageSize, for: .mediaBox),
+            try #require(UIImage(contentsOfFile: pngURL.path(percentEncoded: false))),
+        ]
+        for image in images {
+            let scale = CGFloat(try #require(image.cgImage).width) / PageLayout.pageSize.width
+            let x = Int(point.x * scale)
+            let y = Int(point.y * scale)
+            // Sample a small neighborhood to allow antialiasing at each renderer's scale.
+            let red = (-2...2).flatMap { dx in
+                (-2...2).map { dy in pixel(image, x: x + dx, y: y + dy)[0] }
+            }
+            #expect(try #require(red.min()) < 230)
+            #expect(pixel(image, x: Int(10 * scale), y: Int(10 * scale)).prefix(3).allSatisfy { $0 > 250 })
+        }
+    }
+
     private func makeSourcePDF(rotation: Int = 0) throws -> PDFDocument {
         let data = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 200, height: 300)).pdfData { context in
             context.beginPage()

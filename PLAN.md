@@ -162,7 +162,8 @@ Sync, handwriting search/OCR, shapes, audio, templates marketplace, collaboratio
 - ✅ Shape recognition (hold to snap line/circle/rect/triangle) — custom on top of `PKStroke` (`docs/TASKS.md` T1)
 - Custom toolbar (favorite pens, colors, sizes) instead of only `PKToolPicker`
 - Lasso: move, resize, recolor, copy between pages
-- Page templates (Cornell, planner, music), custom page sizes, infinite canvas option
+- [x] Page templates: Cornell, weekly planner, music staff (`docs/TASKS.md` T2)
+- [ ] Custom page sizes and infinite canvas option
 - Tabs / split view (two notebooks side by side), multiple windows
 - Bookmarks & page links, outline for notebooks
 - Performance: lazy-load drawings for visible pages only, cached thumbnails

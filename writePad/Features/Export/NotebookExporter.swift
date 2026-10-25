@@ -146,7 +146,7 @@ enum NotebookExporter {
                 context.fillPath()
             } else {
                 context.setStrokeColor(PageBackgroundRenderer.lineColor.cgColor)
-                context.setLineWidth(PageBackgroundRenderer.lineWidth)
+                context.setLineWidth(PageBackgroundRenderer.lineWidth(for: page.background))
                 context.strokePath()
             }
             let annotations = snapshot.markups.filter { $0.pageID == page.id }.map { $0.annotation() }

@@ -4,7 +4,7 @@ import Foundation
 ///
 /// Keys this build doesn't know (written by a newer build) are kept in `unknownFields` and written back unchanged.
 struct NotebookManifest: Codable, Equatable, Identifiable, Sendable {
-    static let currentVersion = 3
+    static let currentVersion = 4
 
     var id: UUID
     var title: String
@@ -87,5 +87,5 @@ struct PageInfo: Codable, Equatable, Identifiable, Sendable {
 }
 
 enum PageBackground: String, Codable, CaseIterable, Sendable {
-    case blank, lined, grid, dotted
+    case blank, lined, grid, dotted, cornell, music, plannerWeek
 }

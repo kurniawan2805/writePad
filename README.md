@@ -27,7 +27,7 @@ writePad brings handwritten notebooks and PDF annotation into one local library.
 | --- | --- |
 | **Handwriting** | Use PencilKit's pens, pencil, marker, eraser, lasso, and ruler, with undo/redo and an optional finger-drawing mode. |
 | **Notebooks** | Write across vertically stacked pages, zoom and pan, and add, delete, or reorder pages using the thumbnail sidebar. |
-| **Paper** | Choose blank, lined, grid, or dotted backgrounds. |
+| **Paper** | Choose blank, lined, grid, dotted, Cornell, music staff, or weekly planner backgrounds. |
 | **Library** | Create notebooks and folders, rename and move notebooks, search titles, and sort by name or date. |
 | **PDF reading** | Import from Files or Open in writePad, then navigate with thumbnails, the document outline, and embedded-text search. |
 | **PDF annotation** | Handwrite on pages, highlight, underline, strike through text, and add or edit sticky-note comments. Insert blank paper between PDF pages. |
@@ -136,7 +136,7 @@ Each notebook is a directory named `<UUID>.writepad`:
 └── annotations.json      # PDF text markups and comments
 ```
 
-The current manifest version is **3**. Imported PDFs are preserved as originals; ink and annotations are stored separately. Saves use atomic file writes, and recovery can fall back to a previous manifest, recover orphaned drawing pages, and quarantine undecodable files as `*.corrupt`.
+The current manifest version is **4**. Imported PDFs are preserved as originals; ink and annotations are stored separately. Saves use atomic file writes, and recovery can fall back to a previous manifest, recover orphaned drawing pages, and quarantine undecodable files as `*.corrupt`.
 
 ## Roadmap and contributing
 

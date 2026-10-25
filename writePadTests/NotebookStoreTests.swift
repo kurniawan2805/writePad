@@ -90,6 +90,25 @@ struct NotebookStoreTests {
         #expect(manifest.pages.first?.pdfPageIndex == nil)
     }
 
+    @Test func versionThreeManifestStillLoadsAndUpgradesOnEdit() throws {
+        let original = try store.createNotebook(title: "Version three", background: .grid)
+        let url = store.packageURL(for: original.id).appending(path: "manifest.json")
+        var json = try #require(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
+        json["version"] = 3
+        try JSONSerialization.data(withJSONObject: json).write(to: url, options: .atomic)
+
+        var loaded = try store.loadManifest(id: original.id)
+        #expect(loaded.version == 3)
+        #expect(loaded.pages == original.pages)
+        #expect(!loaded.isNewerThanSupported)
+        loaded.version = NotebookManifest.currentVersion
+        loaded.pages[0].background = .cornell
+        try store.saveManifest(loaded)
+        let reopened = try store.loadManifest(id: original.id)
+        #expect(reopened.version == 4)
+        #expect(reopened.pages[0].background == .cornell)
+    }
+
     @Test func deletingMissingDrawingIsNoOp() throws {
         let manifest = try store.createNotebook(title: "Nothing")
         try store.deleteDrawing(pageID: UUID(), notebookID: manifest.id)

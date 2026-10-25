@@ -205,7 +205,7 @@ private final class PagesBackgroundView: UIView {
             } else {
                 pattern.fillColor = nil
                 pattern.strokeColor = PageBackgroundRenderer.lineColor.cgColor
-                pattern.lineWidth = PageBackgroundRenderer.lineWidth
+                pattern.lineWidth = PageBackgroundRenderer.lineWidth(for: background)
             }
             page.addSublayer(pattern)
             layer.addSublayer(page)

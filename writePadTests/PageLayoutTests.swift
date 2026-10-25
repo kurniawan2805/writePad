@@ -48,6 +48,34 @@ struct PageLayoutTests {
     }
 
     /// A short horizontal stroke centered on `center`.
+    @Test func templatesUseTheirSpecifiedPageCoordinates() {
+        let size = PageLayout.pageSize
+        func points(_ background: PageBackground) -> [CGPoint] {
+            var result: [CGPoint] = []
+            PageBackgroundRenderer.patternPath(for: background).applyWithBlock { element in
+                if element.pointee.type == .moveToPoint || element.pointee.type == .addLineToPoint {
+                    result.append(element.pointee.points[0])
+                }
+            }
+            return result
+        }
+        let cornell = points(.cornell)
+        #expect(cornell[0] == CGPoint(x: size.width * 0.25, y: 0))
+        #expect(cornell[1] == CGPoint(x: size.width * 0.25, y: size.height * 0.8))
+        #expect(cornell[2] == CGPoint(x: 0, y: size.height * 0.8))
+        #expect(cornell[4] == CGPoint(x: size.width * 0.25, y: 32))
+        let music = points(.music)
+        #expect(music.count == 100)
+        #expect(music[0] == CGPoint(x: 48, y: 48))
+        #expect(music[10] == CGPoint(x: 48, y: 120))
+        #expect(music.last == CGPoint(x: size.width - 48, y: 728))
+        let planner = points(.plannerWeek)
+        #expect(planner.count == 26)
+        #expect(planner[0] == CGPoint(x: 0, y: 40))
+        #expect(planner.contains(CGPoint(x: 0, y: size.height / 7)))
+        #expect(PageBackgroundRenderer.lineWidth(for: .plannerWeek) == 1)
+    }
+
     static func stroke(at center: CGPoint) -> PKStroke {
         let points = (-2...2).map { step in
             PKStrokePoint(location: CGPoint(x: center.x + CGFloat(step) * 5, y: center.y), timeOffset: 0.01 * Double(step + 2),

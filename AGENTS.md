@@ -56,7 +56,7 @@ TestSupport/                shared by both test targets (e.g. PDFFixture builds 
 - **Never edit `writePad.xcodeproj` by hand.** Change `project.yml`, then run `xcodegen generate`. The generated project is committed so it opens with a double-click.
 - **Never lose ink.** All writes use `.atomic`; one save is `NotebookStore.write(_:)`: ink → annotations → manifest → delete removed pages. Autosave is debounced (1 s) but starts within 5 s of the first unsaved change, retries failures with backoff (`SaveTiming`), and runs on the editor's serial `writeQueue` off the main actor. `saveNow()` is the synchronous flush (scene leaves `.active`, notebook closes, tests): it waits for a running write and rewrites what that write carried. Keep all of these working when touching the editor.
 - Thumbnails render off the main actor (`PageThumbnailJob`); PDF pages come from a private copy of the document, never the one the `PDFView` shows. Tests that read `thumbnails` must `await editor.waitForThumbnails()` first.
-- **File format** (`<uuid>.writepad/`, currently version 3):
+- **File format** (`<uuid>.writepad/`, currently version 4):
   - `manifest.json`: title, dates (ISO 8601 with milliseconds), ordered pages. A page with `pdfPageIndex` shows that page of `source.pdf`; without it, it is paper.
   - `pages/<pageId>.drawing`: `PKDrawing.dataRepresentation()` in page coordinates.
   - `source.pdf`: the imported original, never modified.
