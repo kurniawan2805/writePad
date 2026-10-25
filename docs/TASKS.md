@@ -25,7 +25,7 @@ Phase 2 work (see `PLAN.md` §4) split into tasks any agent can pick up. Read `A
 | T7 | Recently Deleted: 30-day soft delete for notebooks | M | Codex | done (Codex, 2026-10-25; 115 unit + 10 UI tests passed) |
 | T8 | Thumbnail cache on disk (`thumb.png` for the first page), library cards read it | M | Codex | done (Codex, 2026-10-25; 121 unit + 10 UI tests passed across runs) |
 | T9 | Page items: text boxes and images on pages (format v5) | L | Codex after design | done (6733ddb; 138 unit + 12 UI tests passed) |
-| T10 | Vector ink in PDF export (no rasterized strokes) | L | Claude | open |
+| T10 | Vector ink in PDF export (no rasterized strokes) | L | Codex after design | in progress (Codex, 2026-10-25) |
 | T11 | Custom pen tray (favorite pens) replacing `PKToolPicker` | L | Claude | open |
 | T12 | Multiple windows / two notebooks side by side | M | Claude or Codex after design | open |
 | T13 | Fix imported PDF library preview retaining its source document during rendering | S | Codex | done (78d4145; 121 unit tests passed) |
@@ -98,6 +98,7 @@ Implementation and full-suite simulator verification: [T9 QA](T9_QA.md).
 ### T10 Vector ink in PDF export (L)
 Draw `PKStroke` paths as vector shapes in `NotebookExporter` for pen, monoline and marker inks; keep raster for
 textured inks (pencil, crayon, watercolor). Needs pixel-diff tests against `PKDrawing.image`.
+Design: [T10 design](T10_DESIGN.md); implementation may follow this design.
 
 ### T11 Custom pen tray (L)
 Own toolbar with up to 8 pen presets (ink, width, color), eraser and lasso, persisted per user. Must handle Apple
