@@ -161,7 +161,8 @@ Sync, handwriting search/OCR, shapes, audio, templates marketplace, collaboratio
 ## 4. Post-MVP roadmap
 
 ### Phase 2 — Make it pleasant (1–2 months)
-- Text boxes, image/photo insertion, sticker/clip from camera
+- [x] Text boxes and image/photo insertion (`docs/TASKS.md` T9; [QA](docs/T9_QA.md))
+- [ ] Sticker/clip from camera
 - ✅ Shape recognition (hold to snap line/circle/rect/triangle) — custom on top of `PKStroke` (`docs/TASKS.md` T1)
 - Custom toolbar (favorite pens, colors, sizes) instead of only `PKToolPicker`
 - Lasso: move, resize, recolor, copy between pages
