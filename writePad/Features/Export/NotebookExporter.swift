@@ -84,7 +84,7 @@ enum NotebookExporter {
                     try autoreleasepool {
                         let size = try pageSize(page, document: document)
                         context.beginPage(withBounds: CGRect(origin: .zero, size: size), pageInfo: [:])
-                        try draw(page, snapshot: snapshot, document: document, size: size, in: context.cgContext, vectorInk: true)
+                        try draw(page, snapshot: snapshot, document: document, size: size, in: context.cgContext, asPDF: true)
                     }
                 } catch {
                     renderError = error
@@ -93,6 +93,8 @@ enum NotebookExporter {
             }
         }
         if let renderError { throw renderError }
+        try Task.checkCancellation()
+        try PDFExportAnnotations.add(to: staging, pages: pages, markups: snapshot.markups, source: document)
         try FileManager.default.moveItem(at: staging, to: url)
     }
 
@@ -124,8 +126,10 @@ enum NotebookExporter {
         return size
     }
 
+    /// `asPDF` keeps ink as vectors and leaves markups out of the page content: they are added afterwards as real
+    /// annotations (`PDFExportAnnotations`). A PNG flattens everything.
     private static func draw(_ page: PageInfo, snapshot: NotebookExport, document: PDFDocument?,
-                             size: CGSize, in context: CGContext, vectorInk: Bool = false) throws {
+                             size: CGSize, in context: CGContext, asPDF: Bool = false) throws {
         let rect = CGRect(origin: .zero, size: size)
         context.saveGState()
         defer { context.restoreGState() }
@@ -133,9 +137,14 @@ enum NotebookExporter {
         context.setFillColor(UIColor.white.cgColor)
         context.fill(rect)
         if let index = page.pdfPageIndex, let source = document?.page(at: index) {
-            let annotations = snapshot.markups.filter { $0.pageID == page.id }.map { $0.annotation() }
-            for annotation in annotations { source.addAnnotation(annotation) }
-            defer { for annotation in annotations { source.removeAnnotation(annotation) } }
+            let added = asPDF ? [] : snapshot.markups.filter { $0.pageID == page.id }.map { $0.annotation() }
+            let hidden = asPDF ? PDFExportAnnotations.comments(on: source) : []
+            for annotation in added { source.addAnnotation(annotation) }
+            for annotation in hidden { source.removeAnnotation(annotation) }
+            defer {
+                for annotation in added { source.removeAnnotation(annotation) }
+                for annotation in hidden { source.addAnnotation(annotation) }
+            }
             context.saveGState()
             context.translateBy(x: 0, y: size.height)
             context.scaleBy(x: 1, y: -1)
@@ -151,7 +160,7 @@ enum NotebookExporter {
                 context.setLineWidth(PageBackgroundRenderer.lineWidth(for: page.background))
                 context.strokePath()
             }
-            let annotations = snapshot.markups.filter { $0.pageID == page.id }.map { $0.annotation() }
+            let annotations = asPDF ? [] : snapshot.markups.filter { $0.pageID == page.id }.map { $0.annotation() }
             context.saveGState()
             context.translateBy(x: 0, y: size.height)
             context.scaleBy(x: 1, y: -1)
@@ -160,7 +169,7 @@ enum NotebookExporter {
         }
         if let data = snapshot.drawings[page.id] {
             let drawing = try PKDrawing(data: data)
-            if vectorInk {
+            if asPDF {
                 try PDFInkRenderer.draw(drawing, in: context, rect: rect)
             } else {
                 UITraitCollection(userInterfaceStyle: .light).performAsCurrent {

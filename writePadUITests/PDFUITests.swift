@@ -156,8 +156,11 @@ final class PDFUITests: XCTestCase {
     }
 
     private func showNavigation(in app: XCUIApplication) {
+        let item = app.buttons["Pages, Outline, Search & Comments"]
         app.buttons["PDF Tools"].tap()
-        app.buttons["Pages, Outline, Search & Comments"].tap()
+        // A tap right after the reader scrolled (undo reveals a page) can be swallowed; open the menu again.
+        if !item.waitForExistence(timeout: 3) { app.buttons["PDF Tools"].tap() }
+        item.tap()
     }
 
     private func hideNavigation(in app: XCUIApplication) {

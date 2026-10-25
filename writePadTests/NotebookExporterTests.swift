@@ -94,7 +94,7 @@ struct NotebookExporterTests {
     }
 
     @Test(arguments: [0, 90, 180, 270])
-    func unsavedPDFMarkupsAreFlattenedAtTheCorrectCoordinates(rotation: Int) throws {
+    func unsavedPDFMarkupsAreExportedAtTheCorrectCoordinates(rotation: Int) throws {
         let source = try makeSourcePDF(rotation: rotation)
         let sourceURL = store.rootURL.appending(path: "source.pdf")
         try #require(source.dataRepresentation()).write(to: sourceURL, options: .atomic)
@@ -105,7 +105,7 @@ struct NotebookExporterTests {
         let url = try NotebookExporter.export(snapshot, as: .pdf, directory: store.rootURL)
         let output = try #require(PDFDocument(url: url))
         let rendered = try #require(output.page(at: 0))
-        #expect(rendered.annotations.isEmpty)
+        #expect(rendered.annotations.map(\.type) == ["Highlight"])
         let original = try #require(source.page(at: 0))
         original.addAnnotation(markup.annotation())
         let size = rendered.bounds(for: .mediaBox).size

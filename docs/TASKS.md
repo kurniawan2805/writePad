@@ -30,7 +30,7 @@ Phase 2 work (see `PLAN.md` §4) split into tasks any agent can pick up. Read `A
 | T12 | Multiple windows / two notebooks side by side | M | Codex after design | done (31ff21e; 161 unit + 14 UI tests passed across runs) |
 | T13 | Fix imported PDF library preview retaining its source document during rendering | S | Codex | done (78d4145; 121 unit tests passed) |
 | T14 | PDF undo: ink undo after scrolling away, and undo for highlights/comments | L | Claude | done (see T14 notes; 164 unit + 16 UI tests) |
-| T15 | Export PDF markups as real PDF annotations (comment text kept, editable elsewhere) | L | Claude | open |
+| T15 | Export PDF markups as real PDF annotations (comment text kept, editable elsewhere) | L | Claude | done (see T15 notes; 168 unit + 16 UI tests) |
 | T16 | Tap a comment icon on a PDF page to read/edit it; drag to move it | S | Codex / cheaper | open |
 | T17 | No duplicate highlights on the same text; highlight color choice | S | Codex / cheaper | open |
 | T18 | Eraser mode choice: whole-stroke vs. pixel, in the pen tray | S | Codex / cheaper | open |
@@ -144,6 +144,12 @@ underlines, strikethroughs and comments registered no undo at all, so Undo after
 ### T15 Annotations in exported PDFs (L)
 `NotebookExporter` flattens markups into page content: comment text is lost and highlights can't be edited in other
 apps. Write them as PDF annotations (with ink still vector), keeping the flattened PNG path.
+- Done: `PDFExportAnnotations` adds writePad markups and the source PDF's sticky notes to the exported file as live
+  Highlight/Underline/StrikeOut/Text annotations, moved by the page's crop-box transform; underline and strikeout
+  quad points follow the text on rotated pages. Other source annotations stay flattened as before; PNG flattens all.
+  Ink stays vector after PDFKit rewrites the file (`PDFExportAnnotationTests`).
+- PDFKit draws quad-point underlines on rotated pages 3–6 pt further from the text than on screen; check in Preview
+  and Acrobat on a device export (`docs/DEVICE-CHECKS.md`).
 
 ### T16 Comment icons (S)
 PDFKit on iPadOS shows no popup for a text annotation. Handle `PDFViewAnnotationHit` for writePad comments: open
