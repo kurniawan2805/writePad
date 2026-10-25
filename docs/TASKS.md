@@ -24,7 +24,7 @@ Phase 2 work (see `PLAN.md` §4) split into tasks any agent can pick up. Read `A
 | T6 | Accessibility audit in UI tests (light, dark, large text) | S | Codex / cheaper | done (a407927) |
 | T7 | Recently Deleted: 30-day soft delete for notebooks | M | Codex | done (Codex, 2026-10-25; 115 unit + 10 UI tests passed) |
 | T8 | Thumbnail cache on disk (`thumb.png` for the first page), library cards read it | M | Codex | done (Codex, 2026-10-25; 121 unit + 10 UI tests passed across runs) |
-| T9 | Page items: text boxes and images on pages (format v5) | L | Claude | open |
+| T9 | Page items: text boxes and images on pages (format v5) | L | Codex after design | in progress (Codex, 2026-10-25) |
 | T10 | Vector ink in PDF export (no rasterized strokes) | L | Claude | open |
 | T11 | Custom pen tray (favorite pens) replacing `PKToolPicker` | L | Claude | open |
 | T12 | Multiple windows / two notebooks side by side | M | Claude or Codex after design | open |
@@ -90,6 +90,7 @@ otherwise renders and writes it. Not part of the format: a missing or stale file
 Implementation and simulator verification: [T8 QA](T8_QA.md).
 
 ### T9 Page items (L)
+Design: [T9 design](T9_DESIGN.md); implementation may follow this settled design.
 Text boxes and images positioned on pages, stored per page in the package. Needs a design note first (model, file
 layout, hit testing vs. PencilKit gestures, export, undo). Format v5; version 4 is used by T2 templates.
 
