@@ -1,4 +1,5 @@
 import Observation
+import PDFKit
 import SwiftData
 import UIKit
 
@@ -83,7 +84,7 @@ final class LibraryViewModel {
         defer {
             if hasScopedAccess { sourceURL.stopAccessingSecurityScopedResource() }
         }
-        guard hasScopedAccess || FileManager.default.isReadableFile(atPath: sourceURL.path()) else {
+        guard hasScopedAccess || FileManager.default.isReadableFile(atPath: sourceURL.path(percentEncoded: false)) else {
             throw LibraryError.cannotReadPDF
         }
 
@@ -158,7 +159,14 @@ final class LibraryViewModel {
             let manifest = try store.loadManifest(id: notebook.id)
             guard let page = manifest.pages.first else { return }
             let drawing = try store.loadDrawing(pageID: page.id, notebookID: notebook.id)
-            thumbnails[notebook.id] = PageBackgroundRenderer.thumbnail(background: page.background, drawing: drawing, width: 180)
+            if let index = page.pdfPageIndex {
+                guard let pdfPage = PDFDocument(url: store.sourcePDFURL(for: notebook.id))?.page(at: index) else {
+                    throw NotebookStore.StoreError.invalidPDF
+                }
+                thumbnails[notebook.id] = PageBackgroundRenderer.thumbnail(pdfPage: pdfPage, drawing: drawing, width: 180)
+            } else {
+                thumbnails[notebook.id] = PageBackgroundRenderer.thumbnail(background: page.background, drawing: drawing, width: 180)
+            }
         } catch {
             lastError = error.localizedDescription
         }

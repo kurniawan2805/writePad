@@ -62,7 +62,7 @@ struct LibraryViewModelTests {
         #expect(notebook.title == "Course Notes")
         #expect(notebook.folderID == folder.id)
         #expect(manifest.pages.map(\.pdfPageIndex) == [0])
-        #expect(FileManager.default.fileExists(atPath: store.sourcePDFURL(for: notebook.id).path()))
+        #expect(FileManager.default.fileExists(atPath: store.sourcePDFURL(for: notebook.id).path(percentEncoded: false)))
     }
 
     @Test func titleSearchCombinesWithFolderFilter() throws {
@@ -141,7 +141,7 @@ struct LibraryViewModelTests {
 
         try library.deleteNotebook(notebook)
 
-        #expect(!FileManager.default.fileExists(atPath: store.packageURL(for: id).path()))
+        #expect(!FileManager.default.fileExists(atPath: store.packageURL(for: id).path(percentEncoded: false)))
         #expect(library.notebooks.isEmpty)
         #expect(try container.mainContext.fetchCount(FetchDescriptor<LibraryNotebook>()) == 0)
     }
@@ -212,5 +212,28 @@ struct LibraryViewModelTests {
         try library.closeNotebook()
         #expect(library.editor == nil)
         #expect(try store.loadDrawing(pageID: editor.pages[0].id, notebookID: notebook.id).strokes.count == 1)
+    }
+
+    @Test func pdfNotebookThumbnailShowsThePDFPageInItsOwnShape() throws {
+        let url = store.rootURL.appending(path: "Letter.pdf")
+        try PDFFixture.data(pageCount: 1).write(to: url, options: .atomic)
+        try library.importPDF(from: url)
+        let notebook = try #require(library.notebooks.first)
+
+        library.loadThumbnail(for: notebook)
+
+        let thumbnail = try #require(library.thumbnails[notebook.id])
+        let blankPaper = PageBackgroundRenderer.thumbnail(background: .blank, drawing: .init(), width: thumbnail.size.width)
+        #expect(thumbnail.pngData() != blankPaper.pngData())
+        #expect(abs(thumbnail.size.width / thumbnail.size.height - 612.0 / 792.0) < 0.01)
+    }
+
+    @Test func importsPDFWhoseFileNameHasSpaces() throws {
+        let url = store.rootURL.appending(path: "Kuliah 1 - Fisika.pdf")
+        try PDFFixture.data(pageCount: 1).write(to: url, options: .atomic)
+
+        try library.importPDF(from: url)
+
+        #expect(library.notebooks.map(\.title) == ["Kuliah 1 - Fisika"])
     }
 }

@@ -4,10 +4,11 @@ import XCTest
 final class LibraryUITests: XCTestCase {
     func testImportPDFPresentsFilesPicker() {
         continueAfterFailure = false
-        let app = XCUIApplication()
+        let app = XCUIApplication.isolated()
         app.launch()
 
-        let importButton = app.buttons["Import PDF"]
+        // An empty library also shows Import PDF in its empty state; either button opens the picker.
+        let importButton = app.buttons["Import PDF"].firstMatch
         XCTAssertTrue(importButton.waitForExistence(timeout: 15))
         importButton.tap()
 
@@ -19,7 +20,7 @@ final class LibraryUITests: XCTestCase {
 
     func testNotebookRoundTripThroughLibrary() {
         continueAfterFailure = false
-        let app = XCUIApplication()
+        let app = XCUIApplication.isolated()
         let title = "Library Test \(UUID().uuidString.prefix(6))"
         app.launch()
 
@@ -67,7 +68,7 @@ final class LibraryUITests: XCTestCase {
 
     func testFolderSearchAndSort() {
         continueAfterFailure = false
-        let app = XCUIApplication()
+        let app = XCUIApplication.isolated()
         let suffix = String(UUID().uuidString.prefix(6))
         let folder = "Folder \(suffix)"
         let title = "Course \(suffix)"
@@ -92,6 +93,10 @@ final class LibraryUITests: XCTestCase {
         search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 7) + title.lowercased())
         XCTAssertTrue(card.waitForExistence(timeout: 5))
         search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: title.count))
+        // While search is active with an empty query, iPadOS turns a long press on a card into a tap
+        // (the notebook opens instead of the context menu). End the search first by tapping empty space.
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.85, dy: 0.85)).tap()
+        XCTAssertFalse(app.buttons["Library"].exists, "Tapping empty space must not open a notebook")
         attachScreenshot("Folder with notebook")
         card.press(forDuration: 1)
         app.buttons["Move to Folder"].tap()

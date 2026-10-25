@@ -1,3 +1,4 @@
+import PDFKit
 import PencilKit
 import UIKit
 
@@ -66,6 +67,22 @@ enum PageBackgroundRenderer {
             }
         }
         return path
+    }
+
+    /// A PDF page with its page-local ink, sized to the page's displayed (cropped, rotated) shape.
+    @MainActor
+    static func thumbnail(pdfPage: PDFPage, drawing: PKDrawing, width: CGFloat) -> UIImage {
+        let size = PDFPageCanvas.displaySize(for: pdfPage)
+        let target = CGSize(width: width, height: width * size.height / size.width)
+        let page = pdfPage.thumbnail(of: target, for: .cropBox)
+        var ink = UIImage()
+        UITraitCollection(userInterfaceStyle: .light).performAsCurrent {
+            ink = drawing.image(from: CGRect(origin: .zero, size: size), scale: 2 * width / size.width)
+        }
+        return UIGraphicsImageRenderer(size: target).image { _ in
+            page.draw(in: CGRect(origin: .zero, size: target))
+            ink.draw(in: CGRect(origin: .zero, size: target))
+        }
     }
 
     static func thumbnail(background: PageBackground, drawing: PKDrawing, width: CGFloat) -> UIImage {

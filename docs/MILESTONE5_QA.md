@@ -1,6 +1,6 @@
 # Milestone 5 device checks
 
-Export is available from the editor's Export menu. PDF includes every page in notebook order; PNG exports the current page. Both include white paper, the paper pattern or source PDF, and page-local ink. PDF annotations stored in `source.pdf` are rendered into the exported page. Exports use a temporary folder removed when the share sheet closes.
+Export is available from the editor's Export menu. PDF includes every page in notebook order; PNG exports the current page. Both include white paper, the paper pattern or source PDF, and page-local ink. Highlights, underlines, strikethroughs and comments from `annotations.json`, plus sticky notes already inside `source.pdf`, are rendered into the exported page. Exports use a temporary folder removed when the share sheet closes.
 
 Automated coverage includes unsaved ink, page order, paper patterns, PDF annotations, crop offsets and all four page rotations, missing source files, invalid drawings, and a 101-page notebook. This does not replace the real-device checks below.
 
@@ -35,3 +35,7 @@ xcodebuild test -project writePad.xcodeproj -scheme writePad \
 - [ ] With an Apple Pencil, check pressure, palm rejection, and writing latency.
 
 Record iPad model, iPadOS version, source page count, observed memory use, and any failure before checking off the real-device item in PLAN.md.
+
+## Known issues
+
+- **Long press after clearing search opens the notebook.** In the library, while the search field is active with an empty query (tapped but nothing typed, or all text deleted), a long press on a notebook card opens it instead of showing the context menu. With text in the search field, or after tapping empty space to end the search, the menu appears normally. Hiding behavior of the navigation bar is not the cause (`searchPresentationToolbarBehavior(.avoidHidingContent)` did not change it). Harmless — nothing is modified — but worth revisiting. `LibraryUITests.testFolderSearchAndSort` ends the search before its long press for this reason.

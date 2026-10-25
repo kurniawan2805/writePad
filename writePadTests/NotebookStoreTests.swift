@@ -95,6 +95,17 @@ struct NotebookStoreTests {
         try store.deleteDrawing(pageID: UUID(), notebookID: manifest.id)
     }
 
+    @Test func rootFolderWithSpacesListsAndLoadsNotebooks() throws {
+        let root = store.rootURL.appending(path: "Application Support/Note Books", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let spaced = NotebookStore(rootURL: root)
+        let manifest = try spaced.createNotebook(title: "Spaced")
+        try spaced.saveDrawing(Self.sampleDrawing(), pageID: manifest.pages[0].id, notebookID: manifest.id)
+
+        #expect(try spaced.listNotebooks().map(\.id) == [manifest.id])
+        #expect(try spaced.loadDrawing(pageID: manifest.pages[0].id, notebookID: manifest.id).strokes.count == 1)
+    }
+
     @Test func newerFormatVersionIsRejected() throws {
         var manifest = try store.createNotebook(title: "Future")
         manifest.version = NotebookManifest.currentVersion + 1

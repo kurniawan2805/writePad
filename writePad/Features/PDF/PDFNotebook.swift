@@ -77,6 +77,15 @@ final class PDFNotebook {
         for markup in markups { apply(markup) }
     }
 
+    /// Drops markups whose page was deleted. Returns whether anything was removed.
+    @discardableResult
+    func pruneOrphanedMarkups() -> Bool {
+        let pageIDs = Set(pages.map(\.id))
+        let count = markups.count
+        markups.removeAll { !pageIDs.contains($0.pageID) }
+        return markups.count != count
+    }
+
     func pageID(for page: PDFPage) -> UUID? {
         let index = document.index(for: page)
         return pages.indices.contains(index) ? pages[index].id : nil

@@ -13,7 +13,8 @@ struct NotebookCard: View {
                     Rectangle().fill(.white).overlay { ProgressView() }
                 }
             }
-            .aspectRatio(PageLayout.pageSize, contentMode: .fit)
+            // PDF pages keep their own shape (Letter, landscape, cropped) instead of A4.
+            .aspectRatio(thumbnail?.size ?? PageLayout.pageSize, contentMode: .fit)
             .clipShape(.rect(cornerRadius: 4))
             .shadow(color: .black.opacity(0.12), radius: 3, y: 2)
             Text(notebook.title)

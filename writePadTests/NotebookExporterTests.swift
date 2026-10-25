@@ -143,7 +143,7 @@ struct NotebookExporterTests {
         #expect(throws: NotebookExporter.ExportError.self) {
             try NotebookExporter.export(notebook, as: .png(pageID: UUID()), directory: store.rootURL)
         }
-        #expect(try FileManager.default.contentsOfDirectory(atPath: store.rootURL.path()).isEmpty)
+        #expect(try FileManager.default.contentsOfDirectory(atPath: store.rootURL.path(percentEncoded: false)).isEmpty)
     }
 
     @Test func corruptDrawingLeavesNoPartialExport() throws {
@@ -154,7 +154,7 @@ struct NotebookExporterTests {
         #expect(throws: (any Error).self) {
             try NotebookExporter.export(snapshot, as: .pdf, directory: store.rootURL)
         }
-        #expect(try FileManager.default.contentsOfDirectory(atPath: store.rootURL.path()).isEmpty)
+        #expect(try FileManager.default.contentsOfDirectory(atPath: store.rootURL.path(percentEncoded: false)).isEmpty)
     }
 
     @Test func exportingInsertedBlankPageDoesNotRequireOriginalPDF() throws {

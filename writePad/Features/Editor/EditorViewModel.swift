@@ -43,10 +43,11 @@ final class EditorViewModel {
         self.store = store
         self.manifest = manifest
         let sourceURL = store.sourcePDFURL(for: manifest.id)
-        if manifest.pages.contains(where: { $0.pdfPageIndex != nil }), !FileManager.default.fileExists(atPath: sourceURL.path()) {
+        let hasSourcePDF = FileManager.default.fileExists(atPath: sourceURL.path(percentEncoded: false))
+        if manifest.pages.contains(where: { $0.pdfPageIndex != nil }), !hasSourcePDF {
             throw NotebookStore.StoreError.invalidPDF
         }
-        self.pdf = FileManager.default.fileExists(atPath: sourceURL.path())
+        self.pdf = hasSourcePDF
             ? try PDFNotebook(url: sourceURL, pages: manifest.pages, markups: store.loadPDFMarkups(notebookID: manifest.id)) : nil
         self.pageDrawings = try Dictionary(uniqueKeysWithValues: manifest.pages.map { page in
             (page.id, try store.loadDrawing(pageID: page.id, notebookID: manifest.id))
@@ -56,6 +57,8 @@ final class EditorViewModel {
         #else
         self.allowsFingerDrawing = false
         #endif
+        // Older packages may still hold annotations of pages deleted before pruning existed.
+        if pdf?.pruneOrphanedMarkups() == true { isPDFDirty = true }
         pdf?.onChange = { [weak self] id in
             self?.isPDFDirty = true
             self?.refreshThumbnail(for: id)
@@ -168,6 +171,7 @@ final class EditorViewModel {
 
     private func structureDidChange() {
         pdf?.rebuild(pages: pages)
+        if pdf?.pruneOrphanedMarkups() == true { isPDFDirty = true }
         structureVersion += 1
         isManifestDirty = true
         scheduleSave()
@@ -217,14 +221,9 @@ final class EditorViewModel {
     private func refreshThumbnail(for id: UUID) {
         guard let page = pages.first(where: { $0.id == id }) else { return }
         if let pdfPage = pdf?.page(for: id) {
-            let size = PDFPageCanvas.displaySize(for: pdfPage)
-            let target = CGSize(width: Self.thumbnailWidth, height: Self.thumbnailWidth * size.height / size.width)
-            let image = pdfPage.thumbnail(of: target, for: .cropBox)
-            thumbnails[id] = UIGraphicsImageRenderer(size: target).image { _ in
-                image.draw(in: CGRect(origin: .zero, size: target))
-                drawing(forPage: id).image(from: CGRect(origin: .zero, size: size), scale: target.width / size.width)
-                    .draw(in: CGRect(origin: .zero, size: target))
-            }
+            thumbnails[id] = PageBackgroundRenderer.thumbnail(
+                pdfPage: pdfPage, drawing: drawing(forPage: id), width: Self.thumbnailWidth
+            )
             return
         }
         thumbnails[id] = PageBackgroundRenderer.thumbnail(

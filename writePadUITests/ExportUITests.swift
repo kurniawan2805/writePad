@@ -4,7 +4,7 @@ import XCTest
 final class ExportUITests: XCTestCase {
     func testExportPDFAndPNGPresentShareSheet() {
         continueAfterFailure = false
-        let app = XCUIApplication()
+        let app = XCUIApplication.isolated()
         app.launch()
         let title = "Export Test \(UUID().uuidString.prefix(6))"
         XCTAssertTrue(app.buttons["Create"].waitForExistence(timeout: 15))

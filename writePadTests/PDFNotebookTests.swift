@@ -93,6 +93,19 @@ struct PDFNotebookTests {
         let reopened = try EditorViewModel(store: store, manifest: store.loadManifest(id: editor.manifest.id))
         #expect(reopened.pdf?.document.pageCount == 1)
         #expect(reopened.pdf?.document.page(at: 0)?.annotations.isEmpty == true)
+        #expect(try store.loadPDFMarkups(notebookID: editor.manifest.id).isEmpty)
+    }
+
+    @Test func orphanedAnnotationsFromOlderSavesArePrunedOnOpen() throws {
+        let editor = try openPDF()
+        let kept = PDFMarkup(pageID: editor.pages[0].id, kind: .comment, bounds: CGRect(x: 10, y: 10, width: 24, height: 24), text: "Kept")
+        let orphan = PDFMarkup(pageID: UUID(), kind: .comment, bounds: CGRect(x: 10, y: 10, width: 24, height: 24), text: "Orphan")
+        try store.savePDFMarkups([kept, orphan], notebookID: editor.manifest.id)
+
+        let reopened = try EditorViewModel(store: store, manifest: store.loadManifest(id: editor.manifest.id))
+        #expect(reopened.pdf?.markups.map(\.text) == ["Kept"])
+        reopened.saveNow()
+        #expect(try store.loadPDFMarkups(notebookID: editor.manifest.id).map(\.text) == ["Kept"])
     }
 
     @Test func olderPDFWithoutAnnotationSidecarOpensAndUpgradesOnSave() throws {

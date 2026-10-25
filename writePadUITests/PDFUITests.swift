@@ -6,9 +6,11 @@ import XCTest
 final class PDFUITests: XCTestCase {
     func testPDFReadingAnnotationsAndReopen() throws {
         continueAfterFailure = false
-        let app = XCUIApplication()
+        let app = XCUIApplication.isolated()
         let title = "PDF Test \(UUID().uuidString.prefix(6))"
         let url = try fixture(title: title)
+        // Launch first so the isolated storage environment applies before the file is opened.
+        app.launch()
         app.open(url)
         let imported = app.buttons.containing(.staticText, identifier: title).firstMatch
         XCTAssertTrue(imported.waitForExistence(timeout: 15))

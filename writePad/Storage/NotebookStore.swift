@@ -86,7 +86,7 @@ struct NotebookStore: Sendable {
     }
 
     func listNotebooks() throws -> [NotebookManifest] {
-        guard FileManager.default.fileExists(atPath: rootURL.path()) else { return [] }
+        guard FileManager.default.fileExists(atPath: rootURL.path(percentEncoded: false)) else { return [] }
         let urls = try FileManager.default.contentsOfDirectory(at: rootURL, includingPropertiesForKeys: nil)
         return urls
             .filter { $0.pathExtension == Self.packageExtension }
@@ -117,7 +117,7 @@ struct NotebookStore: Sendable {
 
     func loadPDFMarkups(notebookID: UUID) throws -> [PDFMarkup] {
         let url = packageURL(for: notebookID).appending(path: "annotations.json")
-        guard FileManager.default.fileExists(atPath: url.path()) else { return [] }
+        guard FileManager.default.fileExists(atPath: url.path(percentEncoded: false)) else { return [] }
         return try Self.decoder.decode([PDFMarkup].self, from: Data(contentsOf: url))
     }
 
@@ -130,7 +130,7 @@ struct NotebookStore: Sendable {
     /// Returns an empty drawing when the page has never been saved.
     func loadDrawing(pageID: UUID, notebookID: UUID) throws -> PKDrawing {
         let url = drawingURL(pageID: pageID, notebookID: notebookID)
-        guard FileManager.default.fileExists(atPath: url.path()) else { return PKDrawing() }
+        guard FileManager.default.fileExists(atPath: url.path(percentEncoded: false)) else { return PKDrawing() }
         return try PKDrawing(data: Data(contentsOf: url))
     }
 
@@ -142,7 +142,7 @@ struct NotebookStore: Sendable {
 
     func deleteDrawing(pageID: UUID, notebookID: UUID) throws {
         let url = drawingURL(pageID: pageID, notebookID: notebookID)
-        guard FileManager.default.fileExists(atPath: url.path()) else { return }
+        guard FileManager.default.fileExists(atPath: url.path(percentEncoded: false)) else { return }
         try FileManager.default.removeItem(at: url)
     }
 

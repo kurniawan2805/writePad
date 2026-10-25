@@ -71,12 +71,12 @@ struct EditorViewModelTests {
         editor.drawingDidChange(PKDrawing(strokes: [PageLayoutTests.stroke(at: point)]))
         editor.saveNow()
         let file = store.packageURL(for: editor.manifest.id).appending(path: "pages/\(doomed.uuidString).drawing")
-        #expect(FileManager.default.fileExists(atPath: file.path()))
+        #expect(FileManager.default.fileExists(atPath: file.path(percentEncoded: false)))
 
         editor.deletePage(at: 1)
         let reopened = try reopen(editor)
         #expect(reopened.pages.map(\.id) == [editor.pages[0].id])
-        #expect(!FileManager.default.fileExists(atPath: file.path()))
+        #expect(!FileManager.default.fileExists(atPath: file.path(percentEncoded: false)))
     }
 
     @Test func lastPageCannotBeDeleted() throws {

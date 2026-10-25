@@ -1,4 +1,3 @@
-import SwiftData
 import SwiftUI
 
 @main
@@ -23,8 +22,11 @@ struct WritePadApp: App {
             .task {
                 do {
                     guard library == nil else { return }
-                    let container = try ModelContainer(for: LibraryNotebook.self, LibraryFolder.self)
-                    let model = LibraryViewModel(container: container)
+                    let location = try StorageLocation.current()
+                    let model = LibraryViewModel(
+                        container: try location.makeContainer(),
+                        store: NotebookStore(rootURL: location.notebooksURL)
+                    )
                     try model.refresh()
                     library = model
                     if let pendingPDFURL {
