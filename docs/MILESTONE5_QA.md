@@ -2,7 +2,7 @@
 
 Export is available from the editor's Export menu. PDF includes every page in notebook order; PNG exports the current page. Both include white paper, the paper pattern or source PDF, and page-local ink. Highlights, underlines, strikethroughs and comments from `annotations.json`, plus sticky notes already inside `source.pdf`, are rendered into the exported page. Exports use a temporary folder removed when the share sheet closes.
 
-Automated coverage includes unsaved ink, page order, paper patterns, PDF annotations, crop offsets and all four page rotations, missing source files, invalid drawings, and a 101-page notebook. This does not replace the real-device checks below.
+Automated coverage includes unsaved ink, page order, paper patterns, PDF annotations, crop offsets and all four page rotations, missing source files, invalid drawings, and a 101-page notebook. This does not replace the real-device checks in [DEVICE-CHECKS.md](DEVICE-CHECKS.md).
 
 ## Simulator verification (25 October 2026)
 
@@ -26,15 +26,7 @@ xcodebuild test -project writePad.xcodeproj -scheme writePad \
 
 ## Real iPad acceptance checklist
 
-- [ ] Import a PDF with at least 100 pages, including landscape, cropped, and rotated pages. Navigate and annotate throughout it as Milestone 4 becomes available.
-- [ ] Export that PDF, save it to Files, and open it in another PDF reader. Check page count, order, orientation, comments, markup, and ink placement.
-- [ ] Create a long notebook with ink on the first, middle, and last pages. Reorder pages, export PDF, then export a selected page as PNG. Check paper and ink alignment.
-- [ ] Switch between light and dark appearance. Check the library, empty folder, search with no results, editor controls, white paper, share sheet, and Home Screen icon.
-- [ ] Write, immediately background the app, terminate it, and reopen. Check that the last stroke and page changes survived.
-- [ ] Repeat exports and background saves while memory is constrained, and inspect Xcode's memory graph for retained export buffers after sharing closes.
-- [ ] With an Apple Pencil, check pressure, palm rejection, and writing latency.
-
-Record iPad model, iPadOS version, source page count, observed memory use, and any failure before checking off the real-device item in PLAN.md.
+All real-iPad acceptance checks and result records are maintained in [DEVICE-CHECKS.md](DEVICE-CHECKS.md).
 
 ## Known issues
 

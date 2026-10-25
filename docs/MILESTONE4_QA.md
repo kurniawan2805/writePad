@@ -15,7 +15,7 @@ Import a PDF from the library's Import PDF button or open a PDF in writePad from
 
 ## Storage
 
-Manifest version 3 adds `annotations.json` inside each PDF notebook package. Each annotation stores a stable ID, page ID, kind, PDF-space bounds, and text. Missing annotation files in version 1 and 2 packages load as an empty annotation list; the next edit saves version 3. An unreadable existing file fails opening instead of discarding its contents.
+Manifest version 3 adds `annotations.json` inside each PDF notebook package. Each annotation stores a stable ID, page ID, kind, PDF-space bounds, and text. Missing annotation files in version 1 and 2 packages load as an empty annotation list; the next edit saves the current format version. An unreadable existing file fails opening instead of discarding its contents.
 
 `source.pdf` remains the imported original. The manifest supplies the displayed order using stable source page indices, with no source index for inserted paper. Native text annotations use PDF coordinates; ink uses displayed page points, including crop and rotation, independent of zoom. Ink stays in `pages/<pageID>.drawing`.
 
@@ -23,12 +23,7 @@ Annotation and drawing writes are atomic, share the one-second autosave debounce
 
 ## Device checks
 
-These require a real iPad and Apple Pencil:
-
-- Pressure, tilt, palm rejection, and drawing latency.
-- Drawing while zoomed and panning with fingers in Pencil-only mode.
-- Rotated and cropped PDFs with ink and export compared side by side.
-- A 100+ page PDF, long notebook, and low-memory conditions (Milestone 5 device checklist).
+All real-iPad and Apple Pencil acceptance checks are tracked in [DEVICE-CHECKS.md](DEVICE-CHECKS.md).
 
 ## Simulator verification (2026-10-25)
 

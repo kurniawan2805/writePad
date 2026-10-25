@@ -129,7 +129,8 @@ Usage, storage format, simulator results, and remaining Pencil checks: [Mileston
 - [x] Export notebook / annotated PDF as flattened PDF (render page + drawing into `UIGraphicsPDFRenderer`) and share sheet
 - [x] Export single page as PNG
 - [x] Light/dark mode, app icon, empty states, crash-free autosave
-- [ ] Test on real iPad: 100+ page PDF, long notebook, low memory
+
+Real-iPad acceptance is pending in [DEVICE-CHECKS.md](docs/DEVICE-CHECKS.md).
 
 Simulator verification and the remaining device checklist: [Milestone 5 QA](docs/MILESTONE5_QA.md).
 
@@ -143,9 +144,11 @@ Rationale and the OwlLuna code these ideas come from: [OwlLuna audit](docs/OWLLU
 - [x] Retry failed saves with backoff (1 s doubling, capped at 60 s) and show a non-blocking notice; keep pages dirty until written
 - [x] Recover pages whose drawing file is newer than the manifest but missing from it (crash between the two writes)
 - [x] Move save IO and thumbnail refresh off the main actor (autosaves write on a serial queue; `saveNow` stays a synchronous flush for backgrounding and closing)
-- [x] Preserve unknown manifest fields on load/save so newer files survive an older build; open newer-than-supported manifests read-only (no format change, so `currentVersion` stays 3)
+- [x] Preserve unknown manifest fields on load/save so newer files survive an older build; open newer-than-supported manifests read-only (no format change in Milestone 6; templates in Phase 2 introduce version 4)
 - [x] Tests in `writePadTests/`: corrupt manifest, corrupt drawing, `prev` fallback, orphan recovery, retry after a failed write, latency cap (`NotebookStoreRecoveryTests`, `AutosaveSafetyTests`)
-- [ ] Test on real iPad: kill the app mid-stroke and mid-save, fill storage, confirm nothing is lost (Pencil/device only)
+
+Real-iPad storage acceptance is pending in [DEVICE-CHECKS.md](docs/DEVICE-CHECKS.md).
+
 - ✅ Done when: with a corrupted manifest or a forced write failure, the notebook still opens with all ink and the app reports what happened.
 
 Order of work: corrupt-file handling and `prev` fallback first, then latency cap and retry, then orphan recovery; the main-thread and unknown-field items last because they change more code.
@@ -165,7 +168,8 @@ Sync, handwriting search/OCR, shapes, audio, templates marketplace, collaboratio
 - [x] Page templates: Cornell, weekly planner, music staff (`docs/TASKS.md` T2)
 - [ ] Custom page sizes and infinite canvas option
 - Tabs / split view (two notebooks side by side), multiple windows
-- Bookmarks & page links, outline for notebooks
+- [x] Page bookmarks and sidebar filter (`docs/TASKS.md` T3)
+- [ ] Page links and outline for notebooks
 - Performance: lazy-load drawings for visible pages only, cached thumbnails
 
 ### Phase 3 — Beta & App Store (1 month)
