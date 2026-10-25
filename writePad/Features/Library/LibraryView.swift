@@ -17,7 +17,8 @@ struct LibraryView: View {
                 } label: {
                     LibrarySidebarLabel(title: "All Notebooks", systemImage: "books.vertical")
                 }
-                .listRowBackground(viewModel.selectedFolderID == nil ? Color.accentColor.opacity(0.15) : .clear)
+                .listRowBackground(rowBackground(selected: viewModel.selectedFolderID == nil))
+                .accessibilityAddTraits(viewModel.selectedFolderID == nil ? .isSelected : [])
                 Section {
                     Text("Folders")
                         .font(.headline)
@@ -30,7 +31,8 @@ struct LibraryView: View {
                         } label: {
                             LibrarySidebarLabel(title: folder.title, systemImage: "folder")
                         }
-                        .listRowBackground(viewModel.selectedFolderID == folder.id ? Color.accentColor.opacity(0.15) : .clear)
+                        .listRowBackground(rowBackground(selected: viewModel.selectedFolderID == folder.id))
+                        .accessibilityAddTraits(viewModel.selectedFolderID == folder.id ? .isSelected : [])
                         .contextMenu {
                             Button("Rename", systemImage: "pencil") { showForm(.renameFolder(folder)) }
                             Button("Delete Folder", systemImage: "trash", role: .destructive) { folderToDelete = folder }
@@ -99,6 +101,10 @@ struct LibraryView: View {
         } message: {
             Text("Its notebooks will remain in All Notebooks.")
         }
+    }
+
+    private func rowBackground(selected: Bool) -> Color {
+        Color(selected ? UIColor.tertiarySystemBackground : UIColor.secondarySystemBackground)
     }
 
     private var columns: [GridItem] {

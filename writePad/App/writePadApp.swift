@@ -19,6 +19,7 @@ struct WritePadApp: App {
                     ProgressView()
                 }
             }
+            .preferredColorScheme(testAppearance)
             .task {
                 do {
                     guard library == nil else { return }
@@ -50,6 +51,20 @@ struct WritePadApp: App {
             // Never lose ink: flush pending autosave when leaving the foreground.
             if phase != .active { library?.editor?.saveNow() }
         }
+    }
+
+    private var testAppearance: ColorScheme? {
+        #if DEBUG
+        let environment = ProcessInfo.processInfo.environment
+        guard environment["WRITEPAD_STORAGE_NAMESPACE"] != nil else { return nil }
+        switch environment["WRITEPAD_TEST_APPEARANCE"] {
+        case "Light": return .light
+        case "Dark": return .dark
+        default: return nil
+        }
+        #else
+        return nil
+        #endif
     }
 
     private func importPDF(_ url: URL, into library: LibraryViewModel) {
