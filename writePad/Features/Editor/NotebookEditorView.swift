@@ -31,6 +31,11 @@ struct NotebookEditorView: View {
                 .navigationTitle(viewModel.manifest.title)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar { editorToolbar }
+                .safeAreaInset(edge: .top, spacing: 0) {
+                    if !viewModel.isReadOnly, viewModel.pdf?.isDrawing != false {
+                        PenTrayView(state: viewModel.penTray).disabled(viewModel.isEditingItems)
+                    }
+                }
                 .overlay(alignment: .bottom) { saveErrorBanner }
                 .overlay(alignment: .top) { recoveryBanner }
         }

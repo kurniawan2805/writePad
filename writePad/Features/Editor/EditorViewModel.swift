@@ -26,6 +26,7 @@ final class EditorViewModel {
     var selectedItemID: UUID?
     private(set) var pageItems: [UUID: [PageItem]] = [:]
     private(set) var imageAssets: [UUID: Data] = [:]
+    let penTray = PenTrayState()
     let itemUndoManager = UndoManager()
     let pdf: PDFNotebook?
     /// True when a newer build saved this notebook: it is shown, but nothing in it changes and nothing is written.

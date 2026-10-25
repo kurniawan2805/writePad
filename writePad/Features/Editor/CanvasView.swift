@@ -27,9 +27,12 @@ struct CanvasView: UIViewRepresentable {
         }
         context.coordinator.reload(canvas)
 
-        let toolPicker = context.coordinator.toolPicker
-        toolPicker.addObserver(canvas)
-        toolPicker.setVisible(!viewModel.isReadOnly, forFirstResponder: canvas)
+        canvas.tool = viewModel.penTray.tool
+        context.coordinator.pencilInteraction = PencilToolInteraction(
+            canvas: canvas, state: viewModel.penTray
+        ) { [viewModel, weak canvas] in
+            canvas?.window?.isKeyWindow == true && !viewModel.isReadOnly && !viewModel.isEditingItems
+        }
         // The canvas must be in a window before it can become first responder.
         DispatchQueue.main.async { canvas.becomeFirstResponder() }
         return canvas
@@ -46,7 +49,7 @@ struct CanvasView: UIViewRepresentable {
         canvas.itemsOverlay.configure(viewModel: viewModel, pages: viewModel.pages.enumerated().map {
             ($0.element.id, canvas.layout.frame(ofPage: $0.offset))
         })
-        context.coordinator.toolPicker.setVisible(!viewModel.isReadOnly && !viewModel.isEditingItems, forFirstResponder: canvas)
+        canvas.tool = viewModel.penTray.tool
         if !viewModel.isReadOnly, !viewModel.isEditingItems, canvas.window != nil { canvas.becomeFirstResponder() }
         if let request = viewModel.scrollRequest, request.id != coordinator.handledScrollRequestID {
             coordinator.handledScrollRequestID = request.id
@@ -54,14 +57,9 @@ struct CanvasView: UIViewRepresentable {
         }
     }
 
-    static func dismantleUIView(_ canvas: NotebookCanvasView, coordinator: Coordinator) {
-        coordinator.toolPicker.setVisible(false, forFirstResponder: canvas)
-        coordinator.toolPicker.removeObserver(canvas)
-    }
-
     @MainActor
     final class Coordinator: NSObject, PKCanvasViewDelegate {
-        let toolPicker = PKToolPicker()
+        var pencilInteraction: PencilToolInteraction?
         let viewModel: EditorViewModel
         var structureVersion = -1
         var handledScrollRequestID: UUID?

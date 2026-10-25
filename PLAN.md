@@ -11,7 +11,7 @@ An iPad app for handwritten notes and PDF reading/annotation (in the spirit of G
 | Concern | Choice | Why |
 |---|---|---|
 | Language / UI | **Swift + SwiftUI** (UIKit where needed) | Native, best Apple Pencil latency, no cross-platform overhead |
-| Handwriting | **PencilKit** (`PKCanvasView`, `PKDrawing`, `PKToolPicker`) | Free low-latency inking, pressure/tilt, eraser, lasso, ruler, palm rejection |
+| Handwriting | **PencilKit** (`PKCanvasView`, `PKDrawing`, custom pen tray) | Free low-latency inking, pressure/tilt, eraser, lasso, ruler, palm rejection |
 | PDF | **PDFKit** (`PDFView`, `PDFDocument`, `PDFAnnotation`, `PDFPageOverlayViewProvider`) | Rendering, search, text selection, highlights, notes, outline |
 | Library metadata | **SwiftData** | Folders, titles, tags, dates, thumbnails index |
 | Note content | **Files on disk** (one package folder per notebook) | Large data stays out of the DB; easy export, backup, iCloud later |
@@ -98,7 +98,7 @@ Goal: *"I can create a notebook, write on it with Pencil, import a PDF, mark it 
 
 ### Milestone 1 — Ink canvas (week 1–2)
 - [x] `UIViewRepresentable` wrapper around `PKCanvasView`
-- [x] `PKToolPicker` (pen, pencil, marker, eraser, lasso, ruler)
+- [x] Initial `PKToolPicker` (replaced by the custom favorite pen tray in T11)
 - [x] `drawingPolicy = .pencilOnly` + toggle "draw with finger"
 - [x] Undo / redo
 - [x] Save `PKDrawing` on change (debounced ~1 s) and on app background
@@ -164,7 +164,7 @@ Sync, handwriting search/OCR, shapes, audio, templates marketplace, collaboratio
 - [x] Text boxes and image/photo insertion (`docs/TASKS.md` T9; [QA](docs/T9_QA.md))
 - [ ] Sticker/clip from camera
 - ✅ Shape recognition (hold to snap line/circle/rect/triangle) — custom on top of `PKStroke` (`docs/TASKS.md` T1)
-- Custom toolbar (favorite pens, colors, sizes) instead of only `PKToolPicker`
+- [x] Custom toolbar (favorite pens, colors, sizes), eraser, lasso and Pencil gestures (`docs/TASKS.md` T11; [QA](docs/T11_QA.md))
 - Lasso: move, resize, recolor, copy between pages
 - [x] Page templates: Cornell, weekly planner, music staff (`docs/TASKS.md` T2)
 - [ ] Custom page sizes and infinite canvas option

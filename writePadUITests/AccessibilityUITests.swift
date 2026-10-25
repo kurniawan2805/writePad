@@ -74,8 +74,6 @@ final class AccessibilityUITests: XCTestCase {
             attachment.lifetime = .keepAlways
             activity.add(attachment)
             try app.performAccessibilityAudit { issue in
-                // PencilKit owns this visual handle and its gesture region; the app cannot resize it.
-                if issue.auditType == .hitRegion, issue.element?.label == "Tool palette handle" { return true }
                 // UIKit's single-line navigation title truncates visually, but VoiceOver speaks its full label.
                 // The full editable title is also available on the library card; do not exclude card text.
                 if issue.auditType == .textClipped, let nativeTitle, issue.element?.label == nativeTitle,

@@ -43,11 +43,12 @@ struct PDFCanvasView: UIViewRepresentable {
             overlay.itemsOverlay.configure(viewModel: viewModel, pages: [(id, CGRect(origin: .zero, size: viewModel.pageSize(for: id)))])
             overlay.canvas.isUserInteractionEnabled = pdf.isDrawing && !viewModel.isReadOnly && !viewModel.isEditingItems
             overlay.canvas.drawingPolicy = viewModel.allowsFingerDrawing ? .anyInput : .pencilOnly
+            overlay.canvas.tool = viewModel.penTray.tool
         }
         if pdf.isDrawing && !viewModel.isEditingItems {
             coordinator.activateCurrentCanvas()
         } else {
-            coordinator.hidePicker()
+            coordinator.deactivateCanvas()
         }
         if let request = viewModel.scrollRequest, request.id != coordinator.scrollRequestID,
            let page = pdf.document.page(at: request.pageIndex) {
@@ -73,7 +74,6 @@ struct PDFCanvasView: UIViewRepresentable {
         let viewModel: EditorViewModel
         let pdf: PDFNotebook
         let controller: CanvasController
-        let picker = PKToolPicker()
         weak var view: PDFView?
         var overlays: [UUID: PDFPageCanvas] = [:]
         var structureVersion = -1
@@ -93,8 +93,15 @@ struct PDFCanvasView: UIViewRepresentable {
             overlay.canvas.delegate = self
             overlay.canvas.isUserInteractionEnabled = pdf.isDrawing && !viewModel.isReadOnly && !viewModel.isEditingItems
             overlay.canvas.drawingPolicy = viewModel.allowsFingerDrawing ? .anyInput : .pencilOnly
+            overlay.canvas.tool = viewModel.penTray.tool
             overlay.canvas.accessibilityIdentifier = "PDF Ink Page \((pdf.pages.firstIndex { $0.id == id } ?? 0) + 1)"
-            picker.addObserver(overlay.canvas)
+            overlay.pencilInteraction = PencilToolInteraction(
+                canvas: overlay.canvas, state: viewModel.penTray
+            ) { [viewModel, pdf, weak overlay, weak controller] in
+                guard let canvas = overlay?.canvas else { return false }
+                return controller?.canvasView === canvas && canvas.window?.isKeyWindow == true
+                    && pdf.isDrawing && !viewModel.isReadOnly && !viewModel.isEditingItems
+            }
             overlay.snapper = ShapeSnapper(canvas: overlay.canvas) { [viewModel] in
                 ShapeSnapper.isEnabledInSettings && !viewModel.isReadOnly
             }
@@ -111,8 +118,7 @@ struct PDFCanvasView: UIViewRepresentable {
             guard let overlay = overlayView as? PDFPageCanvas,
                   let id = overlays.first(where: { $0.value === overlay })?.key else { return }
             viewModel.drawingDidChange(overlay.canvas.drawing, pageID: id)
-            picker.setVisible(false, forFirstResponder: overlay.canvas)
-            picker.removeObserver(overlay.canvas)
+            overlay.canvas.resignFirstResponder()
             overlays[id] = nil
         }
 
@@ -137,23 +143,21 @@ struct PDFCanvasView: UIViewRepresentable {
         func activateCurrentCanvas() {
             guard let page = view?.currentPage, let id = pdf.pageID(for: page), let canvas = overlays[id]?.canvas else { return }
             if controller.canvasView !== canvas {
-                hidePicker()
+                deactivateCanvas()
                 controller.canvasView = canvas
             }
-            picker.setVisible(true, forFirstResponder: canvas)
+            canvas.tool = viewModel.penTray.tool
             if canvas.window != nil { canvas.becomeFirstResponder() }
         }
 
-        func hidePicker() {
+        func deactivateCanvas() {
             if let canvas = controller.canvasView {
-                picker.setVisible(false, forFirstResponder: canvas)
                 canvas.resignFirstResponder()
             }
         }
 
         func clearOverlays() {
-            hidePicker()
-            for overlay in overlays.values { picker.removeObserver(overlay.canvas) }
+            deactivateCanvas()
             overlays = [:]
             controller.canvasView = nil
         }
@@ -164,6 +168,7 @@ final class PDFPageCanvas: UIView {
     let canvas = PKCanvasView()
     let itemsOverlay = PageItemsOverlay()
     var snapper: ShapeSnapper?
+    var pencilInteraction: PencilToolInteraction?
     private let pageSize: CGSize
 
     init(size: CGSize) {

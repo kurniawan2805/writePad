@@ -63,7 +63,7 @@ final class PDFUITests: XCTestCase {
 
     private func drawAndReopen(_ app: XCUIApplication, title: String) {
         app.buttons["Draw on PDF"].tap()
-        XCTAssertTrue(app.otherElements["Drawing-Palette"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Favorite Pen 1"].waitForExistence(timeout: 5))
         let reader = app.otherElements["PDF Reader"]
         let start = reader.coordinate(withNormalizedOffset: CGVector(dx: 0.4, dy: 0.3))
         let end = reader.coordinate(withNormalizedOffset: CGVector(dx: 0.7, dy: 0.4))
