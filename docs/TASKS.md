@@ -22,7 +22,7 @@ Phase 2 work (see `PLAN.md` §4) split into tasks any agent can pick up. Read `A
 | T4 | CI: GitHub Actions build + unit tests on every push | S | Codex / cheaper | done (bac103b, 73550ee) |
 | T5 | `docs/DEVICE-CHECKS.md`: one checklist of every real-iPad check | S | Codex / cheaper | done (f56953c) |
 | T6 | Accessibility audit in UI tests (light, dark, large text) | S | Codex / cheaper | done (a407927) |
-| T7 | Recently Deleted: 30-day soft delete for notebooks | M | Codex | open |
+| T7 | Recently Deleted: 30-day soft delete for notebooks | M | Codex | done (Codex, 2026-10-25; 115 unit + 10 UI tests passed) |
 | T8 | Thumbnail cache on disk (`thumb.png` per page), library cards read it | M | Codex | open |
 | T9 | Page items: text boxes and images on pages (format v5) | L | Claude | open |
 | T10 | Vector ink in PDF export (no rasterized strokes) | L | Claude | open |
@@ -78,6 +78,8 @@ Deleting a notebook moves its package to `<root>/.Trash/<id>.writepad` and recor
 the library index, not in the package). A "Recently Deleted" row in the library sidebar lists them with Restore and
 Delete Now. Purge items older than 30 days on launch. `NotebookStore.listNotebooks()` must not see `.Trash`.
 - Accept: delete → restore round trip keeps ink and annotations; purge test with an injected date.
+
+Implementation and full-suite simulator verification: [T7 QA](T7_QA.md). All 115 unit tests and 10 UI tests passed.
 
 ### T8 Thumbnail cache (M)
 After each successful save, write `thumb.png` (first page) into the package off the main actor (reuse

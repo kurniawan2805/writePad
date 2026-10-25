@@ -14,6 +14,8 @@ final class LibraryViewModel {
     private(set) var folders: [LibraryFolder] = []
     private(set) var thumbnails: [UUID: UIImage] = [:]
     private(set) var editor: EditorViewModel?
+    private(set) var deletedNotebooks: [LibraryNotebook] = []
+    var showingRecentlyDeleted = false
     var selectedFolderID: UUID?
     var searchText = ""
     var sortOrder = SortOrder.updated
@@ -21,7 +23,10 @@ final class LibraryViewModel {
 
     // The context alone does not keep its container alive.
     private let container: ModelContainer
-    private var context: ModelContext { container.mainContext }
+    private var context: ModelContext {
+        container.mainContext
+    }
+
     private let store: NotebookStore
 
     init(container: ModelContainer, store: NotebookStore = NotebookStore()) {
@@ -31,8 +36,8 @@ final class LibraryViewModel {
     }
 
     var visibleNotebooks: [LibraryNotebook] {
-        notebooks.filter {
-            (selectedFolderID == nil || $0.folderID == selectedFolderID)
+        (showingRecentlyDeleted ? deletedNotebooks : notebooks).filter {
+            (showingRecentlyDeleted || selectedFolderID == nil || $0.folderID == selectedFolderID)
                 && (searchText.isEmpty || $0.title.localizedStandardContains(searchText))
         }.sorted { lhs, rhs in
             switch sortOrder {
@@ -46,11 +51,11 @@ final class LibraryViewModel {
     }
 
     var title: String {
-        folders.first { $0.id == selectedFolderID }?.title ?? "All Notebooks"
+        showingRecentlyDeleted ? "Recently Deleted" : folders.first { $0.id == selectedFolderID }?.title ?? "All Notebooks"
     }
 
     /// Packages remain authoritative for notebook titles and dates, including pre-library notebooks.
-    func refresh() throws {
+    func refresh(now: Date = .now) throws {
         let manifests = try store.listNotebooks()
         let records = try context.fetch(FetchDescriptor<LibraryNotebook>())
         let indexed = Dictionary(uniqueKeysWithValues: records.map { ($0.id, $0) })
@@ -63,7 +68,29 @@ final class LibraryViewModel {
                 context.insert(LibraryNotebook(manifest: manifest))
             }
         }
+        let trashed = try store.trashStore.listNotebooks()
+        let trashIDs = Set(trashed.map(\.id))
+        for manifest in trashed where indexed[manifest.id] == nil {
+            context.insert(LibraryNotebook(manifest: manifest))
+        }
+        for record in try context.fetch(FetchDescriptor<LibraryNotebook>()) {
+            if trashIDs.contains(record.id) {
+                // If a move succeeded before metadata was saved, start a fresh retention period.
+                if record.deletedAt == nil {
+                    record.deletedAt = now
+                }
+                if let deletedAt = record.deletedAt, now.timeIntervalSince(deletedAt) >= 30 * 24 * 60 * 60 {
+                    try store.trashStore.deleteNotebook(id: record.id)
+                    context.delete(record)
+                }
+            } else if manifests.contains(where: { $0.id == record.id }) {
+                record.deletedAt = nil
+            }
+        }
         try saveMetadata()
+        deletedNotebooks = try context.fetch(FetchDescriptor<LibraryNotebook>()).filter {
+            $0.deletedAt != nil && FileManager.default.fileExists(atPath: store.trashStore.packageURL(for: $0.id).path)
+        }
         let available = Set(manifests.map(\.id))
         notebooks = try context.fetch(FetchDescriptor<LibraryNotebook>()).filter { available.contains($0.id) }
         folders = try context.fetch(FetchDescriptor<LibraryFolder>()).sorted {
@@ -82,7 +109,9 @@ final class LibraryViewModel {
     func importPDF(from sourceURL: URL) throws {
         let hasScopedAccess = sourceURL.startAccessingSecurityScopedResource()
         defer {
-            if hasScopedAccess { sourceURL.stopAccessingSecurityScopedResource() }
+            if hasScopedAccess {
+                sourceURL.stopAccessingSecurityScopedResource()
+            }
         }
         guard hasScopedAccess || FileManager.default.isReadableFile(atPath: sourceURL.path(percentEncoded: false)) else {
             throw LibraryError.cannotReadPDF
@@ -101,7 +130,7 @@ final class LibraryViewModel {
     }
 
     func createFolder(title: String) throws {
-        context.insert(LibraryFolder(title: try validatedTitle(title)))
+        try context.insert(LibraryFolder(title: validatedTitle(title)))
         try saveMetadata()
         try refresh()
     }
@@ -126,7 +155,21 @@ final class LibraryViewModel {
     }
 
     func deleteNotebook(_ notebook: LibraryNotebook) throws {
-        try store.deleteNotebook(id: notebook.id)
+        try store.trashNotebook(id: notebook.id)
+        notebook.deletedAt = .now
+        try saveMetadata()
+        try refresh()
+    }
+
+    func restoreNotebook(_ notebook: LibraryNotebook) throws {
+        try store.restoreNotebook(id: notebook.id)
+        notebook.deletedAt = nil
+        try saveMetadata()
+        try refresh()
+    }
+
+    func permanentlyDeleteNotebook(_ notebook: LibraryNotebook) throws {
+        try store.trashStore.deleteNotebook(id: notebook.id)
         context.delete(notebook)
         try saveMetadata()
         try refresh()
@@ -134,8 +177,12 @@ final class LibraryViewModel {
 
     func deleteFolder(_ folder: LibraryFolder) throws {
         let records = try context.fetch(FetchDescriptor<LibraryNotebook>())
-        for notebook in records where notebook.folderID == folder.id { notebook.folderID = nil }
-        if selectedFolderID == folder.id { selectedFolderID = nil }
+        for notebook in records where notebook.folderID == folder.id {
+            notebook.folderID = nil
+        }
+        if selectedFolderID == folder.id {
+            selectedFolderID = nil
+        }
         context.delete(folder)
         try saveMetadata()
         try refresh()
@@ -156,6 +203,7 @@ final class LibraryViewModel {
 
     func loadThumbnail(for notebook: LibraryNotebook) {
         guard thumbnails[notebook.id] == nil else { return }
+        let store = notebook.deletedAt == nil ? self.store : self.store.trashStore
         do {
             let manifest = try store.loadManifest(id: notebook.id)
             guard let page = manifest.pages.first else { return }

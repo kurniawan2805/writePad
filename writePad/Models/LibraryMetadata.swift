@@ -8,6 +8,7 @@ final class LibraryNotebook {
     var createdAt: Date
     var updatedAt: Date
     var folderID: UUID?
+    var deletedAt: Date?
 
     init(manifest: NotebookManifest, folderID: UUID? = nil) {
         id = manifest.id

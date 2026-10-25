@@ -9,7 +9,7 @@ final class AccessibilityUITests: XCTestCase {
     func testLargestTextInDarkAppearance() throws { try audit(appearance: "Dark", largestText: true) }
 
     private func audit(appearance: String, largestText: Bool = false) throws {
-        continueAfterFailure = true
+        continueAfterFailure = false
         let app = XCUIApplication.isolated()
         app.launchEnvironment["WRITEPAD_TEST_APPEARANCE"] = appearance
         let previousAppearance = XCUIDevice.shared.appearance
@@ -28,8 +28,9 @@ final class AccessibilityUITests: XCTestCase {
         let name = app.textFields["Name"]
         XCTAssertTrue(name.waitForExistence(timeout: 5))
         name.tap()
-        name.typeText("Accessibility Notes")
-        app.buttons["Save"].tap()
+        name.typeText("Accessibility Notes\n")
+        let notebook = app.buttons.containing(.staticText, identifier: "Accessibility Notes").firstMatch
+        XCTAssertTrue(notebook.waitForExistence(timeout: 5), app.debugDescription)
         let url = URL.temporaryDirectory.appending(path: "Accessibility PDF \(UUID().uuidString).pdf")
         try PDFFixture.data().write(to: url, options: .atomic)
         defer { try? FileManager.default.removeItem(at: url) }
@@ -38,7 +39,7 @@ final class AccessibilityUITests: XCTestCase {
         XCTAssertTrue(pdf.waitForExistence(timeout: 15))
         try assertRenderedAppearance(appearance, in: app)
         try auditSurface("Library", in: app)
-        app.buttons.containing(.staticText, identifier: "Accessibility Notes").firstMatch.tap()
+        notebook.tap()
         XCTAssertTrue(app.buttons["Library"].waitForExistence(timeout: 5))
         try auditSurface("Notebook", in: app, nativeTitle: "Accessibility Notes")
         app.buttons["Library"].tap()

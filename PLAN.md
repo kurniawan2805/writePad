@@ -169,6 +169,7 @@ Sync, handwriting search/OCR, shapes, audio, templates marketplace, collaboratio
 - [ ] Custom page sizes and infinite canvas option
 - Tabs / split view (two notebooks side by side), multiple windows
 - [x] Page bookmarks and sidebar filter (`docs/TASKS.md` T3)
+- [x] Recently Deleted: restore notebooks for 30 days, or delete permanently (`docs/TASKS.md` T7; [QA](docs/T7_QA.md))
 - [ ] Page links and outline for notebooks
 - Performance: lazy-load drawings for visible pages only, cached thumbnails
 

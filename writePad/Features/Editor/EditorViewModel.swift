@@ -266,7 +266,7 @@ extension EditorViewModel {
         isWriting = true
         inFlight = changes
         let store = store
-        writeQueue.async {
+        writeQueue.async { [weak self] in
             let result = Result { try store.write(snapshot) }
             Task { @MainActor [weak self] in
                 self?.finishBackgroundWrite(sequence, changes: changes, result: result)

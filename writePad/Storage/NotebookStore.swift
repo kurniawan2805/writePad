@@ -218,6 +218,17 @@ struct NotebookStore: Sendable {
         try FileManager.default.removeItem(at: packageURL(for: id))
     }
 
+    var trashStore: NotebookStore {
+        NotebookStore(rootURL: rootURL.appending(path: ".Trash"))
+    }
+    func trashNotebook(id: UUID) throws {
+        try FileManager.default.createDirectory(at: trashStore.rootURL, withIntermediateDirectories: true)
+        try FileManager.default.moveItem(at: packageURL(for: id), to: trashStore.packageURL(for: id))
+    }
+    func restoreNotebook(id: UUID) throws {
+        try FileManager.default.moveItem(at: trashStore.packageURL(for: id), to: packageURL(for: id))
+    }
+
     // MARK: Drawings
 
     func loadPDFMarkups(notebookID: UUID) throws -> [PDFMarkup] {

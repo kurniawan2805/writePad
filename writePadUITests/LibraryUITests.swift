@@ -64,6 +64,29 @@ final class LibraryUITests: XCTestCase {
         app.buttons["Delete Notebook"].tap()
         app.buttons["Delete Notebook"].tap()
         XCTAssertTrue(renamedCard.waitForNonExistence(timeout: 5))
+        verifyRecentlyDeleted(app, card: renamedCard)
+    }
+
+    private func verifyRecentlyDeleted(_ app: XCUIApplication, card renamedCard: XCUIElement) {
+        app.buttons["Recently Deleted"].tap()
+        XCTAssertTrue(renamedCard.waitForExistence(timeout: 5))
+        renamedCard.press(forDuration: 1)
+        app.buttons["Restore"].tap()
+        XCTAssertTrue(renamedCard.waitForNonExistence(timeout: 5))
+        app.buttons["All Notebooks"].tap()
+        XCTAssertTrue(renamedCard.waitForExistence(timeout: 5))
+        renamedCard.tap()
+        XCTAssertTrue(app.pageIndicator(1, of: 2).waitForExistence(timeout: 5))
+        app.buttons["Library"].tap()
+        renamedCard.press(forDuration: 1)
+        app.buttons["Delete Notebook"].tap()
+        app.buttons["Delete Notebook"].tap()
+        app.buttons["Recently Deleted"].tap()
+        XCTAssertTrue(renamedCard.waitForExistence(timeout: 5))
+        renamedCard.press(forDuration: 1)
+        app.buttons["Delete Now"].tap()
+        app.buttons["Delete Now"].tap()
+        XCTAssertTrue(renamedCard.waitForNonExistence(timeout: 5))
     }
 
     func testFolderSearchAndSort() {

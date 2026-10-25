@@ -29,6 +29,7 @@ struct LibraryItemForm: View {
     let request: Request
     let library: LibraryViewModel
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var name: String
     @State private var paper = PageBackground.blank
     @State private var error: String?
@@ -62,7 +63,7 @@ struct LibraryItemForm: View {
                 }
             }
         }
-        .presentationDetents([.medium])
+        .presentationDetents(dynamicTypeSize.isAccessibilitySize ? [.large] : [.medium])
     }
 
     private func save() {

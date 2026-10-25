@@ -13,12 +13,20 @@ struct LibraryView: View {
         NavigationSplitView {
             List {
                 Button {
+                    viewModel.showingRecentlyDeleted = false
                     viewModel.selectedFolderID = nil
                 } label: {
                     LibrarySidebarLabel(title: "All Notebooks", systemImage: "books.vertical")
                 }
-                .listRowBackground(rowBackground(selected: viewModel.selectedFolderID == nil))
-                .accessibilityAddTraits(viewModel.selectedFolderID == nil ? .isSelected : [])
+                .listRowBackground(rowBackground(selected: viewModel.selectedFolderID == nil && !viewModel.showingRecentlyDeleted))
+                .accessibilityAddTraits(viewModel.selectedFolderID == nil && !viewModel.showingRecentlyDeleted ? .isSelected : [])
+                Button {
+                    viewModel.showingRecentlyDeleted = true
+                } label: {
+                    LibrarySidebarLabel(title: "Recently Deleted", systemImage: "trash")
+                }
+                .listRowBackground(rowBackground(selected: viewModel.showingRecentlyDeleted))
+                .accessibilityAddTraits(viewModel.showingRecentlyDeleted ? .isSelected : [])
                 Section {
                     Text("Folders")
                         .font(.headline)
@@ -27,12 +35,17 @@ struct LibraryView: View {
                         .listRowBackground(Color(.secondarySystemBackground))
                     ForEach(viewModel.folders) { folder in
                         Button {
+                            viewModel.showingRecentlyDeleted = false
                             viewModel.selectedFolderID = folder.id
                         } label: {
                             LibrarySidebarLabel(title: folder.title, systemImage: "folder")
                         }
-                        .listRowBackground(rowBackground(selected: viewModel.selectedFolderID == folder.id))
-                        .accessibilityAddTraits(viewModel.selectedFolderID == folder.id ? .isSelected : [])
+                        .listRowBackground(rowBackground(
+                            selected: viewModel.selectedFolderID == folder.id && !viewModel.showingRecentlyDeleted
+                        ))
+                        .accessibilityAddTraits(
+                            viewModel.selectedFolderID == folder.id && !viewModel.showingRecentlyDeleted ? .isSelected : []
+                        )
                         .contextMenu {
                             Button("Rename", systemImage: "pencil") { showForm(.renameFolder(folder)) }
                             Button("Delete Folder", systemImage: "trash", role: .destructive) { folderToDelete = folder }
@@ -67,7 +80,11 @@ struct LibraryView: View {
         }
         .fullScreenCover(isPresented: Binding(
             get: { viewModel.editor != nil },
-            set: { if !$0 { perform { try viewModel.closeNotebook() } } }
+            set: {
+                if !$0 {
+                    perform { try viewModel.closeNotebook() }
+                }
+            }
         )) {
             if let editor = viewModel.editor {
                 NotebookEditorView(viewModel: editor) { perform { try viewModel.closeNotebook() } }
@@ -75,27 +92,51 @@ struct LibraryView: View {
             }
         }
         .alert("Couldn't update library", isPresented: Binding(
-            get: { viewModel.lastError != nil }, set: { if !$0 { viewModel.lastError = nil } }
+            get: { viewModel.lastError != nil }, set: {
+                if !$0 {
+                    viewModel.lastError = nil
+                }
+            }
         )) {
             Button("OK") { viewModel.lastError = nil }
         } message: {
             Text(viewModel.lastError ?? "")
         }
         .confirmationDialog("Delete notebook?", isPresented: Binding(
-            get: { notebookToDelete != nil }, set: { if !$0 { notebookToDelete = nil } }
+            get: { notebookToDelete != nil }, set: {
+                if !$0 {
+                    notebookToDelete = nil
+                }
+            }
         ), titleVisibility: .visible) {
-            Button("Delete Notebook", role: .destructive) {
-                if let notebook = notebookToDelete { perform { try viewModel.deleteNotebook(notebook) } }
+            Button(viewModel.showingRecentlyDeleted ? "Delete Now" : "Delete Notebook", role: .destructive) {
+                if let notebook = notebookToDelete {
+                    perform {
+                        if viewModel.showingRecentlyDeleted {
+                            try viewModel.permanentlyDeleteNotebook(notebook)
+                        } else {
+                            try viewModel.deleteNotebook(notebook)
+                        }
+                    }
+                }
                 notebookToDelete = nil
             }
         } message: {
-            Text("The notebook and all its writing will be permanently deleted.")
+            Text(viewModel.showingRecentlyDeleted
+                ? "The notebook and all its writing will be permanently deleted."
+                : "You can restore this notebook from Recently Deleted for 30 days.")
         }
         .confirmationDialog("Delete folder?", isPresented: Binding(
-            get: { folderToDelete != nil }, set: { if !$0 { folderToDelete = nil } }
+            get: { folderToDelete != nil }, set: {
+                if !$0 {
+                    folderToDelete = nil
+                }
+            }
         ), titleVisibility: .visible) {
             Button("Delete Folder", role: .destructive) {
-                if let folder = folderToDelete { perform { try viewModel.deleteFolder(folder) } }
+                if let folder = folderToDelete {
+                    perform { try viewModel.deleteFolder(folder) }
+                }
                 folderToDelete = nil
             }
         } message: {
@@ -118,7 +159,9 @@ struct LibraryView: View {
             LazyVGrid(columns: columns, alignment: .leading, spacing: 20) {
                 ForEach(viewModel.visibleNotebooks) { notebook in
                     Button {
-                        perform { try viewModel.openNotebook(notebook) }
+                        if !viewModel.showingRecentlyDeleted {
+                            perform { try viewModel.openNotebook(notebook) }
+                        }
                     } label: {
                         NotebookCard(notebook: notebook, thumbnail: viewModel.thumbnails[notebook.id])
                     }
@@ -132,14 +175,17 @@ struct LibraryView: View {
         .background(Color(.secondarySystemBackground))
         .overlay {
             if viewModel.visibleNotebooks.isEmpty {
-                if viewModel.searchText.isEmpty {
+                if viewModel.showingRecentlyDeleted && viewModel.searchText.isEmpty {
+                    ContentUnavailableView("No Deleted Notebooks", systemImage: "trash",
+                                           description: Text("Deleted notebooks stay here for 30 days."))
+                } else if viewModel.searchText.isEmpty {
                     ContentUnavailableView {
                         Label(viewModel.selectedFolderID == nil ? "No Notebooks" : "This Folder Is Empty",
                               systemImage: viewModel.selectedFolderID == nil ? "books.vertical" : "folder")
                     } description: {
                         Text(viewModel.selectedFolderID == nil
-                             ? "Create a notebook or import a PDF to start writing."
-                             : "Create a notebook here, import a PDF, or move a notebook into this folder.")
+                            ? "Create a notebook or import a PDF to start writing."
+                            : "Create a notebook here, import a PDF, or move a notebook into this folder.")
                     } actions: {
                         Button("New Notebook") { showForm(.newNotebook) }.buttonStyle(.borderedProminent)
                         Button("Import PDF", systemImage: "square.and.arrow.down") { isImportingPDF = true }
@@ -169,14 +215,19 @@ struct LibraryView: View {
 
     @ViewBuilder
     private func notebookMenu(_ notebook: LibraryNotebook) -> some View {
-        Button("Rename", systemImage: "pencil") { showForm(.renameNotebook(notebook)) }
-        Menu("Move to Folder", systemImage: "folder") {
-            Button("No Folder") { perform { try viewModel.moveNotebook(notebook, to: nil) } }
-            ForEach(viewModel.folders) { folder in
-                Button(folder.title) { perform { try viewModel.moveNotebook(notebook, to: folder.id) } }
+        if viewModel.showingRecentlyDeleted {
+            Button("Restore", systemImage: "arrow.uturn.backward") { perform { try viewModel.restoreNotebook(notebook) } }
+            Button("Delete Now", systemImage: "trash", role: .destructive) { notebookToDelete = notebook }
+        } else {
+            Button("Rename", systemImage: "pencil") { showForm(.renameNotebook(notebook)) }
+            Menu("Move to Folder", systemImage: "folder") {
+                Button("No Folder") { perform { try viewModel.moveNotebook(notebook, to: nil) } }
+                ForEach(viewModel.folders) { folder in
+                    Button(folder.title) { perform { try viewModel.moveNotebook(notebook, to: folder.id) } }
+                }
             }
+            Button("Delete Notebook", systemImage: "trash", role: .destructive) { notebookToDelete = notebook }
         }
-        Button("Delete Notebook", systemImage: "trash", role: .destructive) { notebookToDelete = notebook }
     }
 
     private func showForm(_ action: LibraryItemForm.Action) {

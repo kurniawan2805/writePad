@@ -134,18 +134,6 @@ struct LibraryViewModelTests {
         #expect(try store.loadDrawing(pageID: manifest.pages[0].id, notebookID: notebook.id).strokes.count == 1)
     }
 
-    @Test func deletingNotebookRemovesPackageAndIndex() throws {
-        try library.createNotebook(title: "Delete", background: .blank)
-        let notebook = try #require(library.notebooks.first)
-        let id = notebook.id
-
-        try library.deleteNotebook(notebook)
-
-        #expect(!FileManager.default.fileExists(atPath: store.packageURL(for: id).path(percentEncoded: false)))
-        #expect(library.notebooks.isEmpty)
-        #expect(try container.mainContext.fetchCount(FetchDescriptor<LibraryNotebook>()) == 0)
-    }
-
     @Test func returningToLibraryFlushesInkAndRefreshesThumbnail() throws {
         try library.createNotebook(title: "Ink", background: .lined)
         let notebook = try #require(library.notebooks.first)
@@ -230,6 +218,7 @@ struct LibraryViewModelTests {
         let blankPaper = PageBackgroundRenderer.thumbnail(background: .blank, drawing: .init(), width: thumbnail.size.width)
         #expect(thumbnail.pngData() != blankPaper.pngData())
         #expect(abs(thumbnail.size.width / thumbnail.size.height - 612.0 / 792.0) < 0.01)
+
     }
 
     @Test func importsPDFWhoseFileNameHasSpaces() throws {
@@ -239,5 +228,95 @@ struct LibraryViewModelTests {
         try library.importPDF(from: url)
 
         #expect(library.notebooks.map(\.title) == ["Kuliah 1 - Fisika"])
+    }
+}
+
+extension LibraryViewModelTests {
+    @Test func deletingNotebookMovesPackageToTrash() throws {
+        try library.createNotebook(title: "Delete", background: .blank)
+        let notebook = try #require(library.notebooks.first)
+        let id = notebook.id
+
+        try library.deleteNotebook(notebook)
+
+        #expect(!FileManager.default.fileExists(atPath: store.packageURL(for: id).path(percentEncoded: false)))
+        #expect(library.notebooks.isEmpty)
+        #expect(try container.mainContext.fetchCount(FetchDescriptor<LibraryNotebook>()) == 1)
+        #expect(library.deletedNotebooks.map(\.id) == [id])
+        #expect(try store.listNotebooks().isEmpty)
+    }
+
+    @Test func restoringDeletedPDFPreservesPackageBytesAndFolder() throws {
+        let url = store.rootURL.appending(path: "Source.pdf")
+        try PDFFixture.data(pageCount: 1).write(to: url)
+        try library.importPDF(from: url)
+        let notebook = try #require(library.notebooks.first)
+        let manifest = try store.loadManifest(id: notebook.id)
+        try store.saveDrawing(NotebookStoreTests.sampleDrawing(), pageID: manifest.pages[0].id, notebookID: notebook.id)
+        let annotationURL = store.packageURL(for: notebook.id).appending(path: "annotations.json")
+        let markup = PDFMarkup(pageID: manifest.pages[0].id, kind: .comment,
+                               bounds: CGRect(x: 10, y: 10, width: 20, height: 20), text: "Keep this note")
+        try store.savePDFMarkups([markup], notebookID: notebook.id)
+        let annotations = try Data(contentsOf: annotationURL)
+        try library.createFolder(title: "Archive")
+        let folder = try #require(library.folders.first)
+        try library.moveNotebook(notebook, to: folder.id)
+        let inkURL = store.packageURL(for: notebook.id).appending(path: "pages/\(manifest.pages[0].id).drawing")
+        let ink = try Data(contentsOf: inkURL)
+        try library.deleteNotebook(notebook)
+        try library.refresh()
+        library.loadThumbnail(for: notebook)
+        #expect(library.thumbnails[notebook.id] != nil)
+        #expect(library.lastError == nil)
+        try library.restoreNotebook(#require(library.deletedNotebooks.first))
+        #expect(try Data(contentsOf: inkURL) == ink)
+        #expect(try Data(contentsOf: annotationURL) == annotations)
+        #expect(try Data(contentsOf: store.sourcePDFURL(for: notebook.id)) == Data(contentsOf: url))
+        #expect(library.deletedNotebooks.isEmpty)
+        #expect(library.notebooks.map(\.id) == [notebook.id])
+        #expect(library.notebooks.first?.folderID == folder.id)
+        #expect(try store.loadPDFMarkups(notebookID: notebook.id) == [markup])
+    }
+
+    @Test func purgeUsesThirtyDayRetentionAndKeepsRecentDeletions() throws {
+        try library.createNotebook(title: "Old", background: .blank)
+        let old = try #require(library.notebooks.first)
+        try library.deleteNotebook(old)
+        let deletedAt = try #require(old.deletedAt)
+        try library.refresh(now: deletedAt.addingTimeInterval(30 * 24 * 60 * 60 - 1))
+        #expect(library.deletedNotebooks.count == 1)
+        try library.refresh(now: deletedAt.addingTimeInterval(30 * 24 * 60 * 60))
+        #expect(library.deletedNotebooks.isEmpty)
+        #expect(try store.trashStore.listNotebooks().isEmpty)
+    }
+
+    @Test func refreshRecoversMoveWithoutMetadataAndPermanentDeleteRemovesPackage() throws {
+        let manifest = try store.createNotebook(title: "Recover")
+        try store.trashNotebook(id: manifest.id)
+        try library.refresh()
+        let deleted = try #require(library.deletedNotebooks.first)
+        #expect(deleted.deletedAt != nil)
+        try library.permanentlyDeleteNotebook(deleted)
+        #expect(library.deletedNotebooks.isEmpty)
+        #expect(try store.trashStore.listNotebooks().isEmpty)
+    }
+
+    @Test func deletedDateSurvivesPersistentContainerReopen() throws {
+        let configuration = ModelConfiguration(url: store.rootURL.appending(path: "retention.store"))
+        let persistent = try ModelContainer(for: LibraryNotebook.self, LibraryFolder.self, configurations: configuration)
+        let original = LibraryViewModel(container: persistent, store: store)
+        try original.createNotebook(title: "Keep for thirty days", background: .blank)
+        let notebook = try #require(original.notebooks.first)
+        try original.deleteNotebook(notebook)
+        let deletedAt = try #require(notebook.deletedAt)
+
+        let reopenedContainer = try ModelContainer(for: LibraryNotebook.self, LibraryFolder.self, configurations: configuration)
+        let reopened = LibraryViewModel(container: reopenedContainer, store: store)
+        try reopened.refresh(now: deletedAt.addingTimeInterval(29 * 24 * 60 * 60))
+        let deleted = try #require(reopened.deletedNotebooks.first)
+        #expect(deleted.deletedAt == deletedAt)
+        #expect(reopened.notebooks.isEmpty)
+        try reopened.restoreNotebook(deleted)
+        #expect(reopened.notebooks.map(\.id) == [notebook.id])
     }
 }
