@@ -39,7 +39,7 @@ final class LibraryUITests: XCTestCase {
         card.tap()
         XCTAssertTrue(app.buttons["Add Page"].firstMatch.waitForExistence(timeout: 5))
         app.buttons["Add Page"].firstMatch.tap()
-        XCTAssertTrue(app.staticTexts["2 / 2"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.pageIndicator(2, of: 2).waitForExistence(timeout: 5))
         attachScreenshot("Notebook editor")
         app.buttons["Library"].tap()
         XCTAssertTrue(card.waitForExistence(timeout: 5))
@@ -48,7 +48,7 @@ final class LibraryUITests: XCTestCase {
         app.launch()
         XCTAssertTrue(card.waitForExistence(timeout: 15))
         card.tap()
-        XCTAssertTrue(app.staticTexts["1 / 2"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.pageIndicator(1, of: 2).waitForExistence(timeout: 5))
         app.buttons["Library"].tap()
 
         card.press(forDuration: 1)

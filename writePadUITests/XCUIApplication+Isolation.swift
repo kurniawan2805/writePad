@@ -8,4 +8,10 @@ extension XCUIApplication {
         app.launchEnvironment["WRITEPAD_STORAGE_NAMESPACE"] = UUID().uuidString
         return app
     }
+
+    func pageIndicator(_ current: Int, of total: Int) -> XCUIElement {
+        buttons.matching(identifier: "Pages")
+            .matching(NSPredicate(format: "value == %@", "Page \(current) of \(total)"))
+            .firstMatch
+    }
 }

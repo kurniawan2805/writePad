@@ -20,7 +20,7 @@ final class ExportUITests: XCTestCase {
         card.tap()
         XCTAssertTrue(app.buttons["Export"].waitForExistence(timeout: 5))
         app.buttons["Add Page"].tap()
-        XCTAssertTrue(app.staticTexts["2 / 2"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.pageIndicator(2, of: 2).waitForExistence(timeout: 5))
 
         for option in ["Export PDF", "Export Current Page as PNG"] {
             app.buttons["Export"].tap()

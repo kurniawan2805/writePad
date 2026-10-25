@@ -27,10 +27,10 @@ final class PDFUITests: XCTestCase {
         selectNavigation("Outline", in: app)
         XCTAssertTrue(app.buttons["Chapter Two"].waitForExistence(timeout: 5))
         app.buttons["Chapter Two"].tap()
-        XCTAssertTrue(app.staticTexts["2 / 2"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.pageIndicator(2, of: 2).waitForExistence(timeout: 5))
         hideNavigation(in: app)
         app.buttons["Add Page"].firstMatch.tap()
-        XCTAssertTrue(app.staticTexts["3 / 3"].waitForExistence(timeout: 5), app.debugDescription)
+        XCTAssertTrue(app.pageIndicator(3, of: 3).waitForExistence(timeout: 5), app.debugDescription)
         showNavigation(in: app)
         selectNavigation("Search", in: app)
         let search = app.textFields["Search PDF Text"]

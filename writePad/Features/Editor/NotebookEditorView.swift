@@ -2,6 +2,7 @@ import SwiftUI
 
 struct NotebookEditorView: View {
     @Bindable var viewModel: EditorViewModel
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     var onClose: (() -> Void)?
     @State private var canvasController = CanvasController()
     @AppStorage(ShapeSnapper.enabledKey) private var shapeSnapEnabled = true
@@ -63,9 +64,7 @@ struct NotebookEditorView: View {
             }
             .disabled(viewModel.isReadOnly)
             ExportMenu(viewModel: viewModel)
-            Text("\(viewModel.currentPageIndex + 1) / \(viewModel.pages.count)")
-                .font(.subheadline.monospacedDigit())
-                .foregroundStyle(.secondary)
+            pagePosition
             if viewModel.isReadOnly {
                 Label("Read-Only", systemImage: "lock")
                     .labelStyle(.titleAndIcon)
@@ -87,6 +86,24 @@ struct NotebookEditorView: View {
                 .help("Hold the pen still at the end of a stroke to straighten it into a line or shape")
             }
         }
+    }
+
+    private var pagePosition: some View {
+        let current = viewModel.currentPageIndex + 1
+        let total = viewModel.pages.count
+        return Button {
+            columnVisibility = .all
+        } label: {
+            if dynamicTypeSize.isAccessibilitySize {
+                Image(systemName: "doc.on.doc")
+            } else {
+                Text("\(current) / \(total)")
+                    .monospacedDigit()
+                    .foregroundStyle(Color.primary)
+            }
+        }
+        .accessibilityLabel("Pages")
+        .accessibilityValue("Page \(current) of \(total)")
     }
 
     private var paperMenu: some View {

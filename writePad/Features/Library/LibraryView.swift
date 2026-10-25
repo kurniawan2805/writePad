@@ -3,6 +3,7 @@ import UniformTypeIdentifiers
 
 struct LibraryView: View {
     @Bindable var viewModel: LibraryViewModel
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var form: LibraryItemForm.Request?
     @State private var notebookToDelete: LibraryNotebook?
     @State private var folderToDelete: LibraryFolder?
@@ -14,15 +15,20 @@ struct LibraryView: View {
                 Button {
                     viewModel.selectedFolderID = nil
                 } label: {
-                    Label("All Notebooks", systemImage: "books.vertical")
+                    LibrarySidebarLabel(title: "All Notebooks", systemImage: "books.vertical")
                 }
                 .listRowBackground(viewModel.selectedFolderID == nil ? Color.accentColor.opacity(0.15) : .clear)
-                Section("Folders") {
+                Section {
+                    Text("Folders")
+                        .font(.headline)
+                        .foregroundStyle(Color.primary)
+                        .accessibilityAddTraits(.isHeader)
+                        .listRowBackground(Color(.secondarySystemBackground))
                     ForEach(viewModel.folders) { folder in
                         Button {
                             viewModel.selectedFolderID = folder.id
                         } label: {
-                            Label(folder.title, systemImage: "folder")
+                            LibrarySidebarLabel(title: folder.title, systemImage: "folder")
                         }
                         .listRowBackground(viewModel.selectedFolderID == folder.id ? Color.accentColor.opacity(0.15) : .clear)
                         .contextMenu {
@@ -30,7 +36,11 @@ struct LibraryView: View {
                             Button("Delete Folder", systemImage: "trash", role: .destructive) { folderToDelete = folder }
                         }
                     }
-                    Button("New Folder", systemImage: "folder.badge.plus") { showForm(.newFolder) }
+                    Button { showForm(.newFolder) } label: {
+                        LibrarySidebarLabel(title: "New Folder", systemImage: "folder.badge.plus")
+                    }
+                    .buttonStyle(.plain)
+                    .listRowBackground(Color(.secondarySystemBackground))
                 }
             }
             .navigationTitle("writePad")
@@ -91,9 +101,15 @@ struct LibraryView: View {
         }
     }
 
+    private var columns: [GridItem] {
+        dynamicTypeSize.isAccessibilitySize
+            ? [GridItem(.flexible(), alignment: .top)]
+            : [GridItem(.adaptive(minimum: 180, maximum: 240), alignment: .top)]
+    }
+
     private var notebookGrid: some View {
         ScrollView {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 180, maximum: 240), alignment: .top)], alignment: .leading, spacing: 20) {
+            LazyVGrid(columns: columns, alignment: .leading, spacing: 20) {
                 ForEach(viewModel.visibleNotebooks) { notebook in
                     Button {
                         perform { try viewModel.openNotebook(notebook) }
@@ -163,5 +179,25 @@ struct LibraryView: View {
 
     private func perform(_ operation: () throws -> Void) {
         do { try operation() } catch { viewModel.lastError = error.localizedDescription }
+    }
+}
+
+private struct LibrarySidebarLabel: View {
+    let title: String
+    let systemImage: String
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Image(systemName: systemImage)
+                .foregroundStyle(.tint)
+                .accessibilityHidden(true)
+            Text(title)
+                .foregroundStyle(Color.primary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+        .contentShape(.rect)
+        .accessibilityElement(children: .combine)
     }
 }
