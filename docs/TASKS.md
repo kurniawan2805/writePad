@@ -28,6 +28,7 @@ Phase 2 work (see `PLAN.md` §4) split into tasks any agent can pick up. Read `A
 | T10 | Vector ink in PDF export (no rasterized strokes) | L | Claude | open |
 | T11 | Custom pen tray (favorite pens) replacing `PKToolPicker` | L | Claude | open |
 | T12 | Multiple windows / two notebooks side by side | M | Claude or Codex after design | open |
+| T13 | Fix imported PDF library preview retaining its source document during rendering | S | Codex | done (78d4145; 121 unit tests passed) |
 
 Verification: [T2–T6 simulator QA](T2-T6_QA.md).
 
@@ -103,3 +104,9 @@ Pencil double-tap / squeeze (`UIPencilInteraction`) that `PKToolPicker` handles 
 ### T12 Multiple windows (M)
 `UIApplicationSupportsMultipleScenes`, one `LibraryViewModel` per scene sharing one store, and a guard so the same
 notebook can't be open for writing in two windows at once (second opens read-only). Design the guard before coding.
+
+### T13 PDF preview document lifetime (S) — done
+The shared `PageThumbnailJob.render` retains its private `PDFDocument` with `withExtendedLifetime` while
+rendering the PDF page. This fix and the library PDF preview regression check shipped with T8 in `78d4145`.
+All 121 unit tests passed, including PDF preview shape/content and cached PDF markup rendering checks;
+see [T8 QA](T8_QA.md) for the result bundle.
