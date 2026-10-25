@@ -27,6 +27,7 @@ final class LibraryViewModel {
         container.mainContext
     }
 
+    private(set) var thumbnailGeneration = 0
     private let store: NotebookStore
 
     init(container: ModelContainer, store: NotebookStore = NotebookStore()) {
@@ -96,6 +97,7 @@ final class LibraryViewModel {
         folders = try context.fetch(FetchDescriptor<LibraryFolder>()).sorted {
             $0.title.localizedStandardCompare($1.title) == .orderedAscending
         }
+        thumbnailGeneration += 1
         thumbnails.removeAll()
     }
 
@@ -201,23 +203,17 @@ final class LibraryViewModel {
         editor = nil
     }
 
-    func loadThumbnail(for notebook: LibraryNotebook) {
+    func loadThumbnail(for notebook: LibraryNotebook) async {
         guard thumbnails[notebook.id] == nil else { return }
+        let id = notebook.id
+        let generation = thumbnailGeneration
         let store = notebook.deletedAt == nil ? self.store : self.store.trashStore
         do {
-            let manifest = try store.loadManifest(id: notebook.id)
-            guard let page = manifest.pages.first else { return }
-            let drawing = try store.loadDrawing(pageID: page.id, notebookID: notebook.id)
-            if let index = page.pdfPageIndex {
-                guard let pdfPage = PDFDocument(url: store.sourcePDFURL(for: notebook.id))?.page(at: index) else {
-                    throw NotebookStore.StoreError.invalidPDF
-                }
-                thumbnails[notebook.id] = PageBackgroundRenderer.thumbnail(pdfPage: pdfPage, drawing: drawing, width: 180)
-            } else {
-                thumbnails[notebook.id] = PageBackgroundRenderer.thumbnail(background: page.background, drawing: drawing, width: 180)
-            }
+            let image = try await PageThumbnailJob.libraryImage(store: store, notebookID: id)
+            guard !Task.isCancelled, thumbnailGeneration == generation else { return }
+            thumbnails[id] = image
         } catch {
-            lastError = error.localizedDescription
+            if !Task.isCancelled, thumbnailGeneration == generation { lastError = error.localizedDescription }
         }
     }
 

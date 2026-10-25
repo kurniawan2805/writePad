@@ -167,7 +167,7 @@ struct LibraryView: View {
                     }
                     .buttonStyle(.plain)
                     .contextMenu { notebookMenu(notebook) }
-                    .task(id: viewModel.thumbnails[notebook.id] == nil) { viewModel.loadThumbnail(for: notebook) }
+                    .task(id: viewModel.thumbnailGeneration) { await viewModel.loadThumbnail(for: notebook) }
                 }
             }
             .padding(24)

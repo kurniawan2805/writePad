@@ -51,6 +51,7 @@
 		E229FF7365DD75B61DCA577E /* LibraryMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = E98039E3EBFCC1F9B19545A1 /* LibraryMetadata.swift */; };
 		E2DF07043AD07E32CAFDF3D6 /* PDFFixture.swift in Sources */ = {isa = PBXBuildFile; fileRef = F628CE17394D00EC9E7BBBB9 /* PDFFixture.swift */; };
 		E6171359778B1A61BA35DA47 /* PageBackgroundRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EDAE21608C299BE127732A0 /* PageBackgroundRenderer.swift */; };
+		F08ED66E910801B50AD85C6F /* ThumbnailCacheTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9016C7857C714DB71DAF41AD /* ThumbnailCacheTests.swift */; };
 		F53D18E68A1609667FF945BA /* ShapeRecognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C3006DB337B7399C768B1E1 /* ShapeRecognizer.swift */; };
 		F6CE1188E220A93FC241C2D3 /* writePadApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 148587FFBFA085F8E2FDEBAC /* writePadApp.swift */; };
 		FFB6E8F51F0C10BD9CA567DF /* PDFUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7AA3858E8A0A5127ECA3F52 /* PDFUITests.swift */; };
@@ -96,6 +97,7 @@
 		7DDB7FD7E410B5CD2F7F28A0 /* ShapeSnapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShapeSnapper.swift; sourceTree = "<group>"; };
 		8C3006DB337B7399C768B1E1 /* ShapeRecognizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShapeRecognizer.swift; sourceTree = "<group>"; };
 		8EDAE21608C299BE127732A0 /* PageBackgroundRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageBackgroundRenderer.swift; sourceTree = "<group>"; };
+		9016C7857C714DB71DAF41AD /* ThumbnailCacheTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailCacheTests.swift; sourceTree = "<group>"; };
 		9473CD2B3DB31F78640A8D60 /* PageUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageUITests.swift; sourceTree = "<group>"; };
 		9A7014CF60481FBA59EE4FE4 /* ShapeSnapperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShapeSnapperTests.swift; sourceTree = "<group>"; };
 		9A7D979E310DA04F182134F6 /* SaveTiming.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveTiming.swift; sourceTree = "<group>"; };
@@ -265,6 +267,7 @@
 				060EC68D3CFA2FD343A4C857 /* ShapeRecognizerTests.swift */,
 				9A7014CF60481FBA59EE4FE4 /* ShapeSnapperTests.swift */,
 				9BBAE239ECB3F72745E22398 /* StorageLocationTests.swift */,
+				9016C7857C714DB71DAF41AD /* ThumbnailCacheTests.swift */,
 			);
 			path = writePadTests;
 			sourceTree = "<group>";
@@ -436,6 +439,7 @@
 				0AA9A243BBAD31CF4DA7A6CC /* ShapeRecognizerTests.swift in Sources */,
 				564A57D7ABAC0B0FFDBCB334 /* ShapeSnapperTests.swift in Sources */,
 				971F3FA925A61D90AFDBBA35 /* StorageLocationTests.swift in Sources */,
+				F08ED66E910801B50AD85C6F /* ThumbnailCacheTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

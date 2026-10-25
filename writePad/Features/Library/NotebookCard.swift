@@ -19,6 +19,7 @@ struct NotebookCard: View {
             .frame(maxWidth: dynamicTypeSize.isAccessibilitySize ? 140 : .infinity)
             .clipShape(.rect(cornerRadius: 4))
             .shadow(color: .black.opacity(0.12), radius: 3, y: 2)
+            .accessibilityHidden(true)
             Text(notebook.title)
                 .font(.headline)
                 .fixedSize(horizontal: false, vertical: true)

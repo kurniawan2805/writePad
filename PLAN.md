@@ -171,7 +171,8 @@ Sync, handwriting search/OCR, shapes, audio, templates marketplace, collaboratio
 - [x] Page bookmarks and sidebar filter (`docs/TASKS.md` T3)
 - [x] Recently Deleted: restore notebooks for 30 days, or delete permanently (`docs/TASKS.md` T7; [QA](docs/T7_QA.md))
 - [ ] Page links and outline for notebooks
-- Performance: lazy-load drawings for visible pages only, cached thumbnails
+- [x] Disk cache for first-page library thumbnails (`docs/TASKS.md` T8; [QA](docs/T8_QA.md))
+- Performance: lazy-load drawings for visible pages only
 
 ### Phase 3 — Beta & App Store (1 month)
 - Join Apple Developer Program, TestFlight with 10–20 students/friends

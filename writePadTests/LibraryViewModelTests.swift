@@ -1,4 +1,5 @@
 import Foundation
+import PDFKit
 import SwiftData
 import Testing
 import UIKit
@@ -134,7 +135,7 @@ struct LibraryViewModelTests {
         #expect(try store.loadDrawing(pageID: manifest.pages[0].id, notebookID: notebook.id).strokes.count == 1)
     }
 
-    @Test func returningToLibraryFlushesInkAndRefreshesThumbnail() throws {
+    @Test func returningToLibraryFlushesInkAndRefreshesThumbnail() async throws {
         try library.createNotebook(title: "Ink", background: .lined)
         let notebook = try #require(library.notebooks.first)
         try library.openNotebook(notebook)
@@ -142,7 +143,7 @@ struct LibraryViewModelTests {
         editor.drawingDidChange(NotebookStoreTests.sampleDrawing())
 
         try library.closeNotebook()
-        library.loadThumbnail(for: notebook)
+        await library.loadThumbnail(for: notebook)
         try library.openNotebook(notebook)
 
         #expect(library.thumbnails[notebook.id] != nil)
@@ -206,19 +207,24 @@ struct LibraryViewModelTests {
         #expect(try store.loadDrawing(pageID: editor.pages[0].id, notebookID: notebook.id).strokes.count == 1)
     }
 
-    @Test func pdfNotebookThumbnailShowsThePDFPageInItsOwnShape() throws {
+    @Test func pdfNotebookThumbnailShowsThePDFPageInItsOwnShape() async throws {
         let url = store.rootURL.appending(path: "Letter.pdf")
         try PDFFixture.data(pageCount: 1).write(to: url, options: .atomic)
         try library.importPDF(from: url)
         let notebook = try #require(library.notebooks.first)
 
-        library.loadThumbnail(for: notebook)
+        await library.loadThumbnail(for: notebook)
 
         let thumbnail = try #require(library.thumbnails[notebook.id])
         let blankPaper = PageBackgroundRenderer.thumbnail(background: .blank, drawing: .init(), width: thumbnail.size.width)
         #expect(thumbnail.pngData() != blankPaper.pngData())
         #expect(abs(thumbnail.size.width / thumbnail.size.height - 612.0 / 792.0) < 0.01)
-
+        let document = try #require(PDFDocument(url: store.sourcePDFURL(for: notebook.id)))
+        let page = try #require(document.page(at: 0))
+        let expected = withExtendedLifetime(document) {
+            PageBackgroundRenderer.thumbnail(pdfPage: page, drawing: .init(), width: 180)
+        }
+        #expect(thumbnail.pngData() == expected.pngData())
     }
 
     @Test func importsPDFWhoseFileNameHasSpaces() throws {
@@ -246,7 +252,7 @@ extension LibraryViewModelTests {
         #expect(try store.listNotebooks().isEmpty)
     }
 
-    @Test func restoringDeletedPDFPreservesPackageBytesAndFolder() throws {
+    @Test func restoringDeletedPDFPreservesPackageBytesAndFolder() async throws {
         let url = store.rootURL.appending(path: "Source.pdf")
         try PDFFixture.data(pageCount: 1).write(to: url)
         try library.importPDF(from: url)
@@ -265,7 +271,7 @@ extension LibraryViewModelTests {
         let ink = try Data(contentsOf: inkURL)
         try library.deleteNotebook(notebook)
         try library.refresh()
-        library.loadThumbnail(for: notebook)
+        await library.loadThumbnail(for: notebook)
         #expect(library.thumbnails[notebook.id] != nil)
         #expect(library.lastError == nil)
         try library.restoreNotebook(#require(library.deletedNotebooks.first))

@@ -193,6 +193,7 @@ struct NotebookStore: Sendable {
         for pageID in snapshot.deletedPageIDs {
             try deleteDrawing(pageID: pageID, notebookID: notebookID)
         }
+        PageThumbnailJob.refreshLibraryCache(store: self, notebookID: notebookID)
         return manifest
     }
 
