@@ -1,0 +1,33 @@
+name: Prepare iPad tests
+description: Check Xcode, generate the project, lint, and select an installed iPad
+outputs:
+  destination:
+    description: Available iPad simulator destination
+    value: ${{ steps.simulator.outputs.destination }}
+runs:
+  using: composite
+  steps:
+    - name: Verify Xcode 27 or later
+      shell: bash
+      run: |
+        xcodebuild -version
+        major=$(xcodebuild -version | awk '/^Xcode / {split($2, version, "."); print version[1]}')
+        if [[ "$major" -lt 27 ]]; then
+          echo '::error::This project requires Xcode 27 or later.'
+          exit 1
+        fi
+    - name: Install tools and generate project
+      shell: bash
+      run: |
+        brew install xcodegen swiftlint
+        xcodegen generate
+        git diff --exit-code -- writePad.xcodeproj writePad-Info.plist
+    - name: Lint
+      shell: bash
+      run: swiftlint lint --strict
+    - name: Select iPad simulator
+      id: simulator
+      shell: bash
+      run: |
+        destination=$(xcrun simctl list devices available --json | python3 scripts/ci-ipad-destination.py)
+        printf 'destination=%s\n' "$destination" >> "$GITHUB_OUTPUT"

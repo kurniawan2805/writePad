@@ -1,0 +1,52 @@
+name: iPad CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      ui_tests:
+        description: Run the UI suite, including accessibility audits
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit-tests:
+    runs-on: xcode-27
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/prepare-ipad
+        id: prepare
+      - name: Build and run unit tests
+        run: |
+          xcodebuild test -project writePad.xcodeproj -scheme writePad \
+            -destination '${{ steps.prepare.outputs.destination }}' \
+            -derivedDataPath build -parallel-testing-enabled NO \
+            -collect-test-diagnostics never -only-testing:writePadTests
+
+  ui-tests:
+    if: github.event_name == 'workflow_dispatch' && inputs.ui_tests
+    runs-on: xcode-27
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/prepare-ipad
+        id: prepare
+      - name: Run UI tests
+        run: |
+          xcodebuild test -project writePad.xcodeproj -scheme writePad \
+            -destination '${{ steps.prepare.outputs.destination }}' \
+            -derivedDataPath build -parallel-testing-enabled NO \
+            -collect-test-diagnostics never -only-testing:writePadUITests
