@@ -20,7 +20,9 @@ struct PageSidebarView: View {
                     .buttonStyle(.plain)
                     .listRowSeparator(.hidden)
                     .id(page.id)
-                    .contextMenu { menu(forPageAt: index) }
+                    .contextMenu { if !viewModel.isReadOnly { menu(forPageAt: index) } }
+                    .moveDisabled(viewModel.isReadOnly)
+                    .deleteDisabled(viewModel.isReadOnly)
                 }
                 .onMove(perform: viewModel.movePages)
                 .onDelete { offsets in
@@ -36,9 +38,11 @@ struct PageSidebarView: View {
         .toolbar {
             // Top bar only: the bottom edge is covered by the floating tool picker.
             ToolbarItemGroup(placement: .topBarTrailing) {
-                EditButton()
-                Button("Add Page", systemImage: "plus") {
-                    viewModel.addPage(after: viewModel.currentPageIndex)
+                if !viewModel.isReadOnly {
+                    EditButton()
+                    Button("Add Page", systemImage: "plus") {
+                        viewModel.addPage(after: viewModel.currentPageIndex)
+                    }
                 }
             }
         }

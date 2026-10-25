@@ -4,28 +4,6 @@ import PDFKit
 import PencilKit
 import UIKit
 
-/// When autosave runs and how it backs off. Pure, so the timing rules can be tested without waiting.
-struct SaveTiming: Sendable, Equatable {
-    /// Quiet time after the last change before writing.
-    var delay: Duration = .seconds(1)
-    /// However often changes push the save back, it starts within this long of the first unsaved change.
-    var maxLatency: Duration = .seconds(5)
-    /// Wait before the first retry of a failed save; doubles with each failure.
-    var retryBase: Duration = .seconds(1)
-    var retryCap: Duration = .seconds(60)
-
-    /// `notBefore` is the end of a retry backoff: changes made while a save keeps failing don't retry sooner.
-    func deadline(now: ContinuousClock.Instant, firstUnsaved: ContinuousClock.Instant,
-                  notBefore: ContinuousClock.Instant? = nil) -> ContinuousClock.Instant {
-        let due = min(now + delay, firstUnsaved + maxLatency)
-        return notBefore.map { max(due, $0) } ?? due
-    }
-
-    func retryDelay(afterFailures failures: Int) -> Duration {
-        min(retryBase * (1 << min(max(failures - 1, 0), 6)), retryCap)
-    }
-}
-
 @MainActor
 @Observable
 final class EditorViewModel {
@@ -45,6 +23,8 @@ final class EditorViewModel {
     private(set) var currentPageIndex = 0
     var allowsFingerDrawing: Bool
     let pdf: PDFNotebook?
+    /// True when a newer build saved this notebook: it is shown, but nothing in it changes and nothing is written.
+    let isReadOnly: Bool
 
     /// Page-local drawings, keyed by page ID. Not observed: it changes on every stroke.
     @ObservationIgnored private var pageDrawings: [UUID: PKDrawing]
@@ -59,6 +39,23 @@ final class EditorViewModel {
     @ObservationIgnored private var retryNotBefore: ContinuousClock.Instant?
     @ObservationIgnored var saveTiming = SaveTiming()
 
+    /// Serial, so writes never overlap or reorder. Autosaves run on it in the background; `saveNow` waits its turn.
+    @ObservationIgnored private let writeQueue = DispatchQueue(label: "writePad.notebook-save", qos: .utility)
+    @ObservationIgnored private var isWriting = false
+    /// What the running background write carries, so a flush can include it.
+    @ObservationIgnored private var inFlight = PendingChanges()
+    @ObservationIgnored private var saveSequence = 0
+    /// The last save started by `saveNow`; background writes before it were rewritten by it.
+    @ObservationIgnored private var flushedThrough = 0
+    @ObservationIgnored private var thumbnailVersions: [UUID: Int] = [:]
+    @ObservationIgnored private var thumbnailTasks: [UUID: Task<Void, Never>] = [:]
+
+    private struct PendingChanges {
+        var pages: Set<UUID> = []
+        var deleted: Set<UUID> = []
+        var markups = false
+    }
+
     private let store: NotebookStore
 
     static let thumbnailWidth: CGFloat = 140
@@ -66,9 +63,11 @@ final class EditorViewModel {
     var pages: [PageInfo] { manifest.pages }
     private var layout: PageLayout { PageLayout(pageCount: pages.count) }
 
-    init(store: NotebookStore, manifest: NotebookManifest, notices: [String] = [], needsSave: Bool = false) throws {
+    init(store: NotebookStore, manifest: NotebookManifest, notices: [String] = [], needsSave: Bool = false,
+         readOnly: Bool = false) throws {
         self.store = store
         self.manifest = manifest
+        self.isReadOnly = readOnly || manifest.isNewerThanSupported
         let sourceURL = store.sourcePDFURL(for: manifest.id)
         let hasSourcePDF = FileManager.default.fileExists(atPath: sourceURL.path(percentEncoded: false))
         if manifest.pages.contains(where: { $0.pdfPageIndex != nil }), !hasSourcePDF {
@@ -91,14 +90,14 @@ final class EditorViewModel {
         self.allowsFingerDrawing = false
         #endif
         // Older packages may still hold annotations of pages deleted before pruning existed.
-        if pdf?.pruneOrphanedMarkups() == true { isPDFDirty = true }
+        if pdf?.pruneOrphanedMarkups() == true, !isReadOnly { isPDFDirty = true }
         pdf?.onChange = { [weak self] id in
             self?.isPDFDirty = true
-            self?.refreshThumbnail(for: id)
+            self?.refreshThumbnails([id])
             self?.scheduleSave()
         }
-        for page in manifest.pages { refreshThumbnail(for: page.id) }
-        if needsSave {
+        refreshThumbnails(manifest.pages.map(\.id))
+        if needsSave, !isReadOnly {
             isManifestDirty = true
             scheduleSave()
         }
@@ -110,7 +109,8 @@ final class EditorViewModel {
             return try EditorViewModel(store: store, manifest: store.createNotebook(title: "My Notebook"))
         }
         let load = try store.loadManifestReport(id: latest.id)
-        return try EditorViewModel(store: store, manifest: load.manifest, notices: load.notices, needsSave: load.needsSave)
+        return try EditorViewModel(store: store, manifest: load.manifest, notices: load.notices,
+                                   needsSave: load.needsSave, readOnly: load.isReadOnly)
     }
 
     func dismissRecoveryNotice() {
@@ -140,6 +140,7 @@ final class EditorViewModel {
     }
 
     func drawingDidChange(_ combined: PKDrawing) {
+        guard !isReadOnly else { return }
         for (page, newDrawing) in zip(pages, layout.split(combined)) where newDrawing != pageDrawings[page.id] {
             pageDrawings[page.id] = newDrawing
             dirtyPageIDs.insert(page.id)
@@ -148,7 +149,7 @@ final class EditorViewModel {
     }
 
     func drawingDidChange(_ drawing: PKDrawing, pageID: UUID) {
-        guard pages.contains(where: { $0.id == pageID }), drawing != pageDrawings[pageID] else { return }
+        guard !isReadOnly, pages.contains(where: { $0.id == pageID }), drawing != pageDrawings[pageID] else { return }
         pageDrawings[pageID] = drawing
         dirtyPageIDs.insert(pageID)
         scheduleSave()
@@ -168,18 +169,19 @@ final class EditorViewModel {
 
     /// Inserts a page after `index` (or at the end) using the same paper as its neighbor.
     func addPage(after index: Int? = nil) {
+        guard !isReadOnly else { return }
         let insertIndex = min((index ?? pages.count - 1) + 1, pages.count)
         let background = pages[max(insertIndex - 1, 0)].background
         let page = PageInfo(background: background)
         manifest.pages.insert(page, at: insertIndex)
         pageDrawings[page.id] = PKDrawing()
-        refreshThumbnail(for: page.id)
         structureDidChange()
+        refreshThumbnails([page.id])
         scrollToPage(insertIndex)
     }
 
     func deletePage(at index: Int) {
-        guard pages.count > 1, pages.indices.contains(index) else { return }
+        guard !isReadOnly, pages.count > 1, pages.indices.contains(index) else { return }
         let page = manifest.pages.remove(at: index)
         pageDrawings[page.id] = nil
         thumbnails[page.id] = nil
@@ -190,6 +192,7 @@ final class EditorViewModel {
     }
 
     func movePages(from source: IndexSet, to destination: Int) {
+        guard !isReadOnly else { return }
         let currentID = pages[currentPageIndex].id
         manifest.pages.move(fromOffsets: source, toOffset: destination)
         currentPageIndex = pages.firstIndex { $0.id == currentID } ?? 0
@@ -201,16 +204,17 @@ final class EditorViewModel {
     }
 
     func setBackground(_ background: PageBackground, forPageAt index: Int) {
-        guard pages.indices.contains(index), pages[index].background != background else { return }
+        guard !isReadOnly, pages.indices.contains(index), pages[index].background != background else { return }
         manifest.pages[index].background = background
         structureDidChange()
-        refreshThumbnail(for: pages[index].id)
+        refreshThumbnails([pages[index].id])
     }
 
     func applyBackgroundToAllPages(_ background: PageBackground) {
+        guard !isReadOnly else { return }
         for index in pages.indices { manifest.pages[index].background = background }
         structureDidChange()
-        for page in pages { refreshThumbnail(for: page.id) }
+        refreshThumbnails(pages.map(\.id))
     }
 
     private func structureDidChange() {
@@ -221,9 +225,18 @@ final class EditorViewModel {
         scheduleSave()
     }
 
-    // MARK: Saving
+}
+
+// MARK: - Saving
+
+extension EditorViewModel {
+
+    private var hasUnsavedChanges: Bool {
+        !dirtyPageIDs.isEmpty || !deletedPageIDs.isEmpty || isManifestDirty || isPDFDirty
+    }
 
     private func scheduleSave() {
+        guard !isReadOnly else { return }
         let now = ContinuousClock.now
         let since = unsavedSince ?? now
         unsavedSince = since
@@ -235,62 +248,150 @@ final class EditorViewModel {
         pendingSave = Task { [weak self] in
             try? await Task.sleep(until: deadline, clock: .continuous)
             guard !Task.isCancelled else { return }
-            self?.saveNow()
+            self?.autosave()
         }
     }
 
+    /// The timer's save: changes are captured here and written on `writeQueue`, off the main actor.
+    private func autosave() {
+        pendingSave = nil
+        guard !isReadOnly, hasUnsavedChanges else { return }
+        // One background write at a time; when it finishes it schedules the next if anything changed meanwhile.
+        guard !isWriting else { return }
+        let (snapshot, changes) = takeSnapshot(includingInFlight: false)
+        saveSequence += 1
+        let sequence = saveSequence
+        isWriting = true
+        inFlight = changes
+        let store = store
+        writeQueue.async {
+            let result = Result { try store.write(snapshot) }
+            Task { @MainActor [weak self] in
+                self?.finishBackgroundWrite(sequence, changes: changes, result: result)
+            }
+        }
+    }
+
+    private func finishBackgroundWrite(_ sequence: Int, changes: PendingChanges,
+                                       result: Result<NotebookManifest, any Error>) {
+        isWriting = false
+        inFlight = PendingChanges()
+        switch result {
+        case let .success(written):
+            saveSucceeded(written, pages: changes.pages)
+        case let .failure(error):
+            // A `saveNow` that started after this write already wrote everything it carried.
+            if sequence > flushedThrough { saveFailed(error, changes: changes) }
+        }
+        if hasUnsavedChanges, pendingSave == nil { scheduleSave() }
+    }
+
+    /// Writes everything now and returns when it is on disk (or has failed), after any background write still
+    /// running. Used when the app leaves the foreground, when a notebook closes, and by tests.
     func saveNow() {
         pendingSave?.cancel()
         pendingSave = nil
-        guard !dirtyPageIDs.isEmpty || !deletedPageIDs.isEmpty || isManifestDirty || isPDFDirty else {
+        guard !isReadOnly, hasUnsavedChanges || isWriting else {
             unsavedSince = nil
             return
         }
-        // Keep a failed manifest write retryable even after drawing files have been saved.
-        isManifestDirty = true
-        do {
-            for id in dirtyPageIDs {
-                try store.saveDrawing(drawing(forPage: id), pageID: id, notebookID: manifest.id)
-                refreshThumbnail(for: id)
-            }
-            dirtyPageIDs.removeAll()
-            if isPDFDirty, let pdf {
-                try store.savePDFMarkups(pdf.markups, notebookID: manifest.id)
-                isPDFDirty = false
-            }
-            manifest.version = NotebookManifest.currentVersion
-            manifest.updatedAt = .now
-            try store.saveManifest(manifest)
-            isManifestDirty = false
-            for id in deletedPageIDs {
-                try store.deleteDrawing(pageID: id, notebookID: manifest.id)
-            }
-            deletedPageIDs.removeAll()
-            lastError = nil
-            unsavedSince = nil
-            saveFailures = 0
-            retryNotBefore = nil
-        } catch {
-            lastError = error.localizedDescription
-            // Everything stays dirty; try again on our own, backing off so a full disk isn't hammered.
-            saveFailures += 1
-            let retryAt = ContinuousClock.now + saveTiming.retryDelay(afterFailures: saveFailures)
-            retryNotBefore = retryAt
-            unsavedSince = unsavedSince ?? .now
-            schedule(at: retryAt)
+        let (snapshot, changes) = takeSnapshot(includingInFlight: true)
+        saveSequence += 1
+        flushedThrough = saveSequence
+        let store = store
+        let result = writeQueue.sync { Result { try store.write(snapshot) } }
+        switch result {
+        case let .success(written): saveSucceeded(written, pages: changes.pages)
+        case let .failure(error): saveFailed(error, changes: changes)
         }
     }
 
-    private func refreshThumbnail(for id: UUID) {
-        guard let page = pages.first(where: { $0.id == id }) else { return }
-        if let pdfPage = pdf?.page(for: id) {
-            thumbnails[id] = PageBackgroundRenderer.thumbnail(
-                pdfPage: pdfPage, drawing: drawing(forPage: id), width: Self.thumbnailWidth
-            )
-            return
+    /// Captures what to write and marks it clean. Changes made while it is written count as new changes.
+    private func takeSnapshot(includingInFlight: Bool) -> (NotebookStore.SaveSnapshot, PendingChanges) {
+        var changes = PendingChanges(pages: dirtyPageIDs, deleted: deletedPageIDs, markups: isPDFDirty)
+        if includingInFlight {
+            changes.pages.formUnion(inFlight.pages)
+            changes.deleted.formUnion(inFlight.deleted)
+            changes.markups = changes.markups || inFlight.markups
         }
-        thumbnails[id] = PageBackgroundRenderer.thumbnail(
-            background: page.background, drawing: drawing(forPage: id), width: Self.thumbnailWidth
+        changes.pages = changes.pages.filter { pageDrawings[$0] != nil } // deleted since they changed
+        dirtyPageIDs.removeAll()
+        deletedPageIDs.removeAll()
+        isPDFDirty = false
+        isManifestDirty = false
+        unsavedSince = nil
+        let snapshot = NotebookStore.SaveSnapshot(
+            manifest: manifest,
+            drawings: Dictionary(uniqueKeysWithValues: changes.pages.map { ($0, drawing(forPage: $0)) }),
+            markups: changes.markups ? pdf?.markups : nil,
+            deletedPageIDs: changes.deleted
         )
+        return (snapshot, changes)
+    }
+
+    private func saveSucceeded(_ written: NotebookManifest, pages: Set<UUID>) {
+        manifest.updatedAt = written.updatedAt
+        manifest.version = written.version
+        lastError = nil
+        saveFailures = 0
+        retryNotBefore = nil
+        refreshThumbnails(pages)
+    }
+
+    /// Everything the failed save carried becomes unsaved again, and a retry is scheduled with backoff so a full
+    /// disk isn't hammered.
+    private func saveFailed(_ error: any Error, changes: PendingChanges) {
+        dirtyPageIDs.formUnion(changes.pages.filter { pageDrawings[$0] != nil })
+        deletedPageIDs.formUnion(changes.deleted)
+        isPDFDirty = isPDFDirty || changes.markups
+        isManifestDirty = true
+        lastError = error.localizedDescription
+        saveFailures += 1
+        let retryAt = ContinuousClock.now + saveTiming.retryDelay(afterFailures: saveFailures)
+        retryNotBefore = retryAt
+        unsavedSince = unsavedSince ?? .now
+        schedule(at: retryAt)
+    }
+
+    // MARK: Thumbnails
+
+    private func refreshThumbnails(_ ids: some Collection<UUID>) {
+        let jobs = ids.compactMap { id -> PageThumbnailJob? in
+            guard let page = pages.first(where: { $0.id == id }) else { return nil }
+            thumbnailVersions[id, default: 0] += 1
+            return PageThumbnailJob(id: id, version: thumbnailVersions[id] ?? 0, background: page.background,
+                                pdfPageIndex: page.pdfPageIndex, drawing: drawing(forPage: id),
+                                markups: pdf?.markups.filter { $0.pageID == id } ?? [])
+        }
+        guard !jobs.isEmpty else { return }
+        let sourceURL = store.sourcePDFURL(for: manifest.id)
+        let width = Self.thumbnailWidth
+        let token = UUID()
+        thumbnailTasks[token] = Task.detached(priority: .utility) { [weak self] in
+            let document = jobs.contains { $0.pdfPageIndex != nil } ? PDFDocument(url: sourceURL) : nil
+            for job in jobs {
+                let image = job.render(document: document, width: width)
+                await self?.setThumbnail(image, for: job)
+            }
+            await self?.thumbnailTaskFinished(token)
+        }
+    }
+
+    private func setThumbnail(_ image: UIImage, for job: PageThumbnailJob) {
+        // A newer render of the same page may already be on its way; and the page may have been deleted.
+        guard thumbnailVersions[job.id] == job.version, pages.contains(where: { $0.id == job.id }) else { return }
+        thumbnails[job.id] = image
+    }
+
+    private func thumbnailTaskFinished(_ token: UUID) {
+        thumbnailTasks[token] = nil
+    }
+
+    /// Waits until every requested thumbnail has been rendered. For tests.
+    func waitForThumbnails() async {
+        while let (token, task) = thumbnailTasks.first {
+            await task.value
+            thumbnailTasks[token] = nil
+        }
     }
 }

@@ -93,22 +93,27 @@ struct PDFSidebarView: View {
                                 .font(.caption).foregroundStyle(.secondary)
                         }
                     }
-                    if markup.kind == .comment, pdf.markups.contains(where: { $0.id == markup.id }) {
+                    if markup.kind == .comment, isEditable(markup) {
                         Button("Edit Comment") { editingComment = markup }.font(.caption)
                     }
                 }
                 .swipeActions {
-                    if pdf.markups.contains(where: { $0.id == markup.id }) {
+                    if isEditable(markup) {
                         Button("Delete", role: .destructive) { pdf.removeMarkup(id: markup.id) }
                     }
                 }
                 .contextMenu {
-                    if pdf.markups.contains(where: { $0.id == markup.id }) {
+                    if isEditable(markup) {
                         Button("Delete Annotation", role: .destructive) { pdf.removeMarkup(id: markup.id) }
                     }
                 }
             }
         }
+    }
+
+    /// writePad's own annotations can be edited; ones that came inside the PDF, or any in a read-only notebook, can't.
+    private func isEditable(_ markup: PDFMarkup) -> Bool {
+        !viewModel.isReadOnly && pdf.markups.contains { $0.id == markup.id }
     }
 
     private func jump(to id: UUID) {

@@ -142,8 +142,8 @@ Rationale and the OwlLuna code these ideas come from: [OwlLuna audit](docs/OWLLU
 - [x] Cap save latency: debounce stays 1 s, but a pending save starts at most ~5 s after the first unsaved edit (today every edit restarts the timer)
 - [x] Retry failed saves with backoff (1 s doubling, capped at 60 s) and show a non-blocking notice; keep pages dirty until written
 - [x] Recover pages whose drawing file is newer than the manifest but missing from it (crash between the two writes)
-- [ ] Move save IO and thumbnail refresh off the main actor (`saveNow` currently writes synchronously on `@MainActor`)
-- [ ] Preserve unknown manifest fields on load/save so newer files survive an older build; open newer-than-supported manifests read-only (bump `NotebookManifest.currentVersion` if the format changes)
+- [x] Move save IO and thumbnail refresh off the main actor (autosaves write on a serial queue; `saveNow` stays a synchronous flush for backgrounding and closing)
+- [x] Preserve unknown manifest fields on load/save so newer files survive an older build; open newer-than-supported manifests read-only (no format change, so `currentVersion` stays 3)
 - [x] Tests in `writePadTests/`: corrupt manifest, corrupt drawing, `prev` fallback, orphan recovery, retry after a failed write, latency cap (`NotebookStoreRecoveryTests`, `AutosaveSafetyTests`)
 - [ ] Test on real iPad: kill the app mid-stroke and mid-save, fill storage, confirm nothing is lost (Pencil/device only)
 - ✅ Done when: with a corrupted manifest or a forced write failure, the notebook still opens with all ink and the app reports what happened.

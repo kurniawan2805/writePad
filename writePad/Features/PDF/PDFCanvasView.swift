@@ -37,7 +37,7 @@ struct PDFCanvasView: UIViewRepresentable {
             coordinator.structureVersion = viewModel.structureVersion
         }
         for overlay in coordinator.overlays.values {
-            overlay.canvas.isUserInteractionEnabled = pdf.isDrawing
+            overlay.canvas.isUserInteractionEnabled = pdf.isDrawing && !viewModel.isReadOnly
             overlay.canvas.drawingPolicy = viewModel.allowsFingerDrawing ? .anyInput : .pencilOnly
         }
         if pdf.isDrawing {
@@ -87,7 +87,7 @@ struct PDFCanvasView: UIViewRepresentable {
             let overlay = PDFPageCanvas(size: PDFPageCanvas.displaySize(for: page))
             overlay.canvas.drawing = viewModel.drawing(forPage: id)
             overlay.canvas.delegate = self
-            overlay.canvas.isUserInteractionEnabled = pdf.isDrawing
+            overlay.canvas.isUserInteractionEnabled = pdf.isDrawing && !viewModel.isReadOnly
             overlay.canvas.drawingPolicy = viewModel.allowsFingerDrawing ? .anyInput : .pencilOnly
             overlay.canvas.accessibilityIdentifier = "PDF Ink Page \((pdf.pages.firstIndex { $0.id == id } ?? 0) + 1)"
             picker.addObserver(overlay.canvas)
@@ -187,7 +187,7 @@ final class PDFPageCanvas: UIView {
         return super.hitTest(point, with: event)
     }
 
-    static func displaySize(for page: PDFPage) -> CGSize {
+    nonisolated static func displaySize(for page: PDFPage) -> CGSize {
         let size = page.bounds(for: .cropBox).size
         return page.rotation % 180 == 0 ? size : CGSize(width: size.height, height: size.width)
     }

@@ -26,7 +26,7 @@ struct CanvasView: UIViewRepresentable {
 
         let toolPicker = context.coordinator.toolPicker
         toolPicker.addObserver(canvas)
-        toolPicker.setVisible(true, forFirstResponder: canvas)
+        toolPicker.setVisible(!viewModel.isReadOnly, forFirstResponder: canvas)
         // The canvas must be in a window before it can become first responder.
         DispatchQueue.main.async { canvas.becomeFirstResponder() }
         return canvas
@@ -34,6 +34,8 @@ struct CanvasView: UIViewRepresentable {
 
     func updateUIView(_ canvas: NotebookCanvasView, context: Context) {
         canvas.drawingPolicy = viewModel.allowsFingerDrawing ? .anyInput : .pencilOnly
+        // Read-only notebooks still scroll and zoom; they just can't be drawn on.
+        canvas.drawingGestureRecognizer.isEnabled = !viewModel.isReadOnly
         let coordinator = context.coordinator
         if coordinator.structureVersion != viewModel.structureVersion {
             coordinator.reload(canvas)

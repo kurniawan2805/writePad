@@ -122,10 +122,73 @@ struct EditorViewModelTests {
         #expect(editor.pages.count == 1)
     }
 
-    @Test func thumbnailsExistForEveryPage() throws {
+    @Test func thumbnailsExistForEveryPage() async throws {
         let editor = try EditorViewModel.openDefault(store: store)
         editor.addPage()
+        await editor.waitForThumbnails()
         #expect(editor.pages.allSatisfy { editor.thumbnails[$0.id] != nil })
+    }
+
+    @Test func newerNotebookOpensReadOnlyAndNothingIsWritten() throws {
+        var manifest = try store.createNotebook(title: "From the future")
+        manifest.version = NotebookManifest.currentVersion + 1
+        try store.saveManifest(manifest)
+        let url = store.packageURL(for: manifest.id).appending(path: "manifest.json")
+        let before = try Data(contentsOf: url)
+
+        let editor = try EditorViewModel.openDefault(store: store)
+        #expect(editor.isReadOnly)
+        #expect(editor.recoveryNotice != nil)
+        editor.drawingDidChange(NotebookStoreTests.sampleDrawing(), pageID: editor.pages[0].id)
+        editor.addPage()
+        editor.setBackground(.grid, forPageAt: 0)
+        editor.saveNow()
+
+        #expect(editor.pages.count == 1)
+        #expect(editor.drawing(forPage: editor.pages[0].id).strokes.isEmpty)
+        #expect(editor.lastError == nil)
+        #expect(try Data(contentsOf: url) == before)
+        let pages = store.packageURL(for: manifest.id).appending(path: "pages")
+        #expect(try FileManager.default.contentsOfDirectory(atPath: pages.path(percentEncoded: false)).isEmpty)
+    }
+
+    @Test func editsDuringBackgroundWritesAllReachDisk() async throws {
+        let editor = try EditorViewModel.openDefault(store: store)
+        editor.saveTiming = SaveTiming(delay: .milliseconds(1), maxLatency: .milliseconds(3))
+        let pageID = editor.pages[0].id
+        let stroke = try #require(NotebookStoreTests.sampleDrawing().strokes.first)
+
+        // Background autosaves start and finish while strokes keep arriving.
+        for count in 1...30 {
+            editor.drawingDidChange(PKDrawing(strokes: Array(repeating: stroke, count: count)), pageID: pageID)
+            try await Task.sleep(for: .milliseconds(2))
+        }
+        editor.saveNow()
+
+        #expect(editor.lastError == nil)
+        #expect(try store.loadDrawing(pageID: pageID, notebookID: editor.manifest.id).strokes.count == 30)
+    }
+
+    @Test func pageDeletedWhileItsInkIsBeingWrittenStaysDeleted() async throws {
+        let editor = try EditorViewModel.openDefault(store: store)
+        editor.saveTiming = SaveTiming(delay: .milliseconds(1), maxLatency: .milliseconds(1))
+        editor.addPage()
+        editor.saveNow()
+        let doomed = editor.pages[1].id
+        let point = PageLayout(pageCount: 2).frame(ofPage: 1).origin.applying(CGAffineTransform(translationX: 80, y: 80))
+
+        for _ in 0..<5 {
+            editor.drawingDidChange(PKDrawing(strokes: [PageLayoutTests.stroke(at: point)]))
+            try await Task.sleep(for: .milliseconds(3)) // let a background write pick the page up
+        }
+        editor.deletePage(at: 1)
+        editor.saveNow()
+
+        let file = store.packageURL(for: editor.manifest.id).appending(path: "pages/\(doomed.uuidString).drawing")
+        #expect(!FileManager.default.fileExists(atPath: file.path(percentEncoded: false)))
+        let reopened = try EditorViewModel.openDefault(store: store)
+        #expect(reopened.pages.map(\.id) == [editor.pages[0].id])
+        #expect(reopened.recoveryNotice == nil)
     }
 
     @Test func failedManifestSaveCanBeRetriedAfterDrawingWasWritten() throws {

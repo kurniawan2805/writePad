@@ -32,6 +32,8 @@ struct NotebookStore: Sendable {
         var notices: [String] = []
         /// True when the manifest was changed in memory (pages recovered) and should be saved.
         var needsSave = false
+        /// True when a newer build wrote the notebook: show it, but never write to it.
+        var isReadOnly = false
     }
 
     /// A drawing plus what had to be done to read it (empty when nothing).
@@ -125,24 +127,16 @@ struct NotebookStore: Sendable {
     }
 
     /// Reads `manifest.json`, falling back to `manifest.prev.json` when it is missing or damaged. A damaged file is set
-    /// aside, and a manifest from a newer version is never set aside or replaced by an older backup. With
+    /// aside. A manifest from a newer version is never set aside or replaced by an older backup: it opens read-only,
+    /// or throws `unsupportedVersion` when this build can't decode it at all. With
     /// `recoveringPages`, drawings written just before a crash that the manifest never listed are added as pages.
     func loadManifestReport(id: UUID, recoveringPages: Bool = true) throws -> ManifestLoad {
         let primary = manifestURL(for: id), backup = previousManifestURL(for: id)
         var setAside: [String] = []
         var notices: [String] = []
         for url in [primary, backup] {
-            guard let data = try readIfPresent(url) else { continue }
-            let manifest: NotebookManifest
-            do {
-                manifest = try Self.decoder.decode(NotebookManifest.self, from: data)
-            } catch {
-                if let moved = try? quarantine(url) { setAside.append(moved.lastPathComponent) }
-                continue
-            }
-            guard manifest.version <= NotebookManifest.currentVersion else {
-                throw StoreError.unsupportedVersion(manifest.version)
-            }
+            guard let data = try readIfPresent(url),
+                  let manifest = try decodeManifest(data, at: url, setAside: &setAside) else { continue }
             if url == backup {
                 // Put the backup in place so the next load, and the next save's backup, start from a valid file.
                 try? data.write(to: primary, options: .atomic)
@@ -150,6 +144,11 @@ struct NotebookStore: Sendable {
             }
             if !setAside.isEmpty {
                 notices.append("Damaged file kept as \(setAside.joined(separator: ", ")).")
+            }
+            if manifest.isNewerThanSupported {
+                // Recovering pages would need a save, and saving would downgrade the format: open as it is.
+                notices.append("This notebook was saved by a newer version of writePad, so it is open read-only.")
+                return ManifestLoad(manifest: manifest, notices: notices, isReadOnly: true)
             }
             var load = ManifestLoad(manifest: manifest, notices: notices, needsSave: false)
             if recoveringPages {
@@ -166,67 +165,53 @@ struct NotebookStore: Sendable {
         throw CocoaError(.fileReadNoSuchFile)
     }
 
-    /// The file's contents, or nil if it doesn't exist. A present but unreadable file (as opposed to an undecodable
-    /// one) may be a passing I/O or data-protection error, so it throws: falling back to an older backup would let
-    /// the next save overwrite the newer manifest.
-    private func readIfPresent(_ url: URL) throws -> Data? {
-        do {
-            return try Data(contentsOf: url)
-        } catch {
-            if FileManager.default.fileExists(atPath: url.path(percentEncoded: false)) { throw error }
-            return nil
-        }
+    /// Everything one save writes, captured on the main actor so the writing itself can happen elsewhere.
+    struct SaveSnapshot: Sendable {
+        var manifest: NotebookManifest
+        var drawings: [UUID: PKDrawing] = [:]
+        /// nil when the annotations didn't change.
+        var markups: [PDFMarkup]?
+        var deletedPageIDs: Set<UUID> = []
     }
 
-    /// A save writes drawings first and the manifest last, so a crash in between leaves drawings the manifest doesn't
-    /// list. Those are told apart from pages deleted on purpose by age: a deleted page's drawing is older than the
-    /// manifest that dropped it, a crashed save's is newer than the manifest it never reached. Returns how many were added.
-    private func recoverOrphanedPages(into manifest: inout NotebookManifest) -> Int {
-        let directory = packageURL(for: manifest.id).appending(path: "pages")
-        let files = (try? FileManager.default.contentsOfDirectory(
-            at: directory, includingPropertiesForKeys: [.contentModificationDateKey]
-        )) ?? []
-        let known = Set(manifest.pages.map(\.id))
-        let orphans = files.compactMap { file -> (id: UUID, written: Date)? in
-            guard file.pathExtension == "drawing",
-                  let id = UUID(uuidString: file.deletingPathExtension().lastPathComponent), !known.contains(id),
-                  let written = try? file.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate,
-                  written > manifest.updatedAt,
-                  let data = try? Data(contentsOf: file), (try? Self.decodeDrawing(data)) != nil else { return nil }
-            return (id, written)
-        }.sorted { $0.written < $1.written }
-        // New pages take the paper of the one before them, as pages added in the editor do.
-        let paper = manifest.pages.last { $0.pdfPageIndex == nil }?.background ?? .blank
-        manifest.pages += orphans.map { PageInfo(id: $0.id, background: paper) }
-        return orphans.count
+    /// Writes one save in the order that keeps a crash recoverable: ink, annotations, manifest, then removed pages.
+    /// The manifest is stamped after the ink is written, which `recoverOrphanedPages` relies on. Returns it as written.
+    @discardableResult
+    func write(_ snapshot: SaveSnapshot) throws -> NotebookManifest {
+        let notebookID = snapshot.manifest.id
+        try ensureWritable(notebookID)
+        for (pageID, drawing) in snapshot.drawings {
+            try saveDrawing(drawing, pageID: pageID, notebookID: notebookID)
+        }
+        if let markups = snapshot.markups {
+            try savePDFMarkups(markups, notebookID: notebookID)
+        }
+        var manifest = snapshot.manifest
+        manifest.version = NotebookManifest.currentVersion
+        manifest.updatedAt = .now
+        try writeManifest(manifest)
+        for pageID in snapshot.deletedPageIDs {
+            try deleteDrawing(pageID: pageID, notebookID: notebookID)
+        }
+        return manifest
     }
 
     func saveManifest(_ manifest: NotebookManifest) throws {
+        try ensureWritable(manifest.id)
+        try writeManifest(manifest)
+    }
+
+    private func writeManifest(_ manifest: NotebookManifest) throws {
         let data = try Self.encoder.encode(manifest)
         backUpManifest(for: manifest.id)
         try data.write(to: manifestURL(for: manifest.id), options: .atomic)
     }
 
-    /// Copies the manifest on disk to `manifest.prev.json` before it is replaced, but only if it is valid, so a
-    /// damaged file never overwrites a good backup. Best effort: a failed backup must not stop the save itself.
-    private func backUpManifest(for notebookID: UUID) {
-        guard let current = try? Data(contentsOf: manifestURL(for: notebookID)),
-              (try? Self.decoder.decode(NotebookManifest.self, from: current)) != nil else { return }
-        try? current.write(to: previousManifestURL(for: notebookID), options: .atomic)
-    }
-
-    /// Renames a damaged file to `<name>.corrupt` (`.corrupt-2`, … if taken) and returns the new URL.
-    @discardableResult
-    private func quarantine(_ url: URL) throws -> URL {
-        let fileManager = FileManager.default
-        var target = url.appendingPathExtension("corrupt")
-        var attempt = 1
-        while fileManager.fileExists(atPath: target.path(percentEncoded: false)) {
-            attempt += 1
-            target = url.appendingPathExtension("corrupt-\(attempt)")
-        }
-        try fileManager.moveItem(at: url, to: target)
-        return target
+    /// Refuses to write over a notebook that a newer build saved: this build would drop what it doesn't understand.
+    func ensureWritable(_ notebookID: UUID) throws {
+        guard let data = try? Data(contentsOf: manifestURL(for: notebookID)),
+              let version = Self.formatVersion(of: data), version > NotebookManifest.currentVersion else { return }
+        throw StoreError.unsupportedVersion(version)
     }
 
     func deleteNotebook(id: UUID) throws {
@@ -314,4 +299,86 @@ struct NotebookStore: Sendable {
 
     /// ISO 8601 with milliseconds, so notebooks created in the same second still sort correctly.
     private static let dateFormat = Date.ISO8601FormatStyle(includingFractionalSeconds: true)
+}
+
+// MARK: - Recovery
+
+extension NotebookStore {
+    /// Decodes a manifest file. An undecodable one is set aside (its new name added to `setAside`) and nil returned,
+    /// except that a newer build's manifest this build can't decode throws `unsupportedVersion` and stays untouched:
+    /// that is a format this build doesn't know, not damage.
+    private func decodeManifest(_ data: Data, at url: URL, setAside: inout [String]) throws -> NotebookManifest? {
+        do {
+            return try Self.decoder.decode(NotebookManifest.self, from: data)
+        } catch {
+            if let version = Self.formatVersion(of: data), version > NotebookManifest.currentVersion {
+                throw StoreError.unsupportedVersion(version)
+            }
+            if let moved = try? quarantine(url) { setAside.append(moved.lastPathComponent) }
+            return nil
+        }
+    }
+
+    /// The file's contents, or nil if it doesn't exist. A present but unreadable file (as opposed to an undecodable
+    /// one) may be a passing I/O or data-protection error, so it throws: falling back to an older backup would let
+    /// the next save overwrite the newer manifest.
+    private func readIfPresent(_ url: URL) throws -> Data? {
+        do {
+            return try Data(contentsOf: url)
+        } catch {
+            if FileManager.default.fileExists(atPath: url.path(percentEncoded: false)) { throw error }
+            return nil
+        }
+    }
+
+    /// A save writes drawings first and the manifest last, so a crash in between leaves drawings the manifest doesn't
+    /// list. Those are told apart from pages deleted on purpose by age: a deleted page's drawing is older than the
+    /// manifest that dropped it, a crashed save's is newer than the manifest it never reached. Returns how many were added.
+    private func recoverOrphanedPages(into manifest: inout NotebookManifest) -> Int {
+        let directory = packageURL(for: manifest.id).appending(path: "pages")
+        let files = (try? FileManager.default.contentsOfDirectory(
+            at: directory, includingPropertiesForKeys: [.contentModificationDateKey]
+        )) ?? []
+        let known = Set(manifest.pages.map(\.id))
+        let orphans = files.compactMap { file -> (id: UUID, written: Date)? in
+            guard file.pathExtension == "drawing",
+                  let id = UUID(uuidString: file.deletingPathExtension().lastPathComponent), !known.contains(id),
+                  let written = try? file.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate,
+                  written > manifest.updatedAt,
+                  let data = try? Data(contentsOf: file), (try? Self.decodeDrawing(data)) != nil else { return nil }
+            return (id, written)
+        }.sorted { $0.written < $1.written }
+        // New pages take the paper of the one before them, as pages added in the editor do.
+        let paper = manifest.pages.last { $0.pdfPageIndex == nil }?.background ?? .blank
+        manifest.pages += orphans.map { PageInfo(id: $0.id, background: paper) }
+        return orphans.count
+    }
+
+    /// The `version` field of a manifest, even when the rest of it can't be decoded.
+    private static func formatVersion(of data: Data) -> Int? {
+        struct Probe: Decodable { let version: Int }
+        return try? decoder.decode(Probe.self, from: data).version
+    }
+
+    /// Copies the manifest on disk to `manifest.prev.json` before it is replaced, but only if it is valid, so a
+    /// damaged file never overwrites a good backup. Best effort: a failed backup must not stop the save itself.
+    private func backUpManifest(for notebookID: UUID) {
+        guard let current = try? Data(contentsOf: manifestURL(for: notebookID)),
+              (try? Self.decoder.decode(NotebookManifest.self, from: current)) != nil else { return }
+        try? current.write(to: previousManifestURL(for: notebookID), options: .atomic)
+    }
+
+    /// Renames a damaged file to `<name>.corrupt` (`.corrupt-2`, … if taken) and returns the new URL.
+    @discardableResult
+    private func quarantine(_ url: URL) throws -> URL {
+        let fileManager = FileManager.default
+        var target = url.appendingPathExtension("corrupt")
+        var attempt = 1
+        while fileManager.fileExists(atPath: target.path(percentEncoded: false)) {
+            attempt += 1
+            target = url.appendingPathExtension("corrupt-\(attempt)")
+        }
+        try fileManager.moveItem(at: url, to: target)
+        return target
+    }
 }

@@ -41,10 +41,12 @@ struct NotebookEditorView: View {
             if let onClose {
                 Button("Library", systemImage: "books.vertical", action: onClose)
             }
-            Button("Undo", systemImage: "arrow.uturn.backward") { canvasController.undo() }
-                .keyboardShortcut("z", modifiers: .command)
-            Button("Redo", systemImage: "arrow.uturn.forward") { canvasController.redo() }
-                .keyboardShortcut("z", modifiers: [.command, .shift])
+            if !viewModel.isReadOnly {
+                Button("Undo", systemImage: "arrow.uturn.backward") { canvasController.undo() }
+                    .keyboardShortcut("z", modifiers: .command)
+                Button("Redo", systemImage: "arrow.uturn.forward") { canvasController.redo() }
+                    .keyboardShortcut("z", modifiers: [.command, .shift])
+            }
         }
         ToolbarItemGroup(placement: .topBarTrailing) {
             if let pdf = viewModel.pdf {
@@ -56,14 +58,21 @@ struct NotebookEditorView: View {
             Text("\(viewModel.currentPageIndex + 1) / \(viewModel.pages.count)")
                 .font(.subheadline.monospacedDigit())
                 .foregroundStyle(.secondary)
-            if viewModel.pages[viewModel.currentPageIndex].pdfPageIndex == nil { paperMenu }
-            Button("Add Page", systemImage: "doc.badge.plus") {
-                viewModel.addPage(after: viewModel.currentPageIndex)
+            if viewModel.isReadOnly {
+                Label("Read-Only", systemImage: "lock")
+                    .labelStyle(.titleAndIcon)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            } else {
+                if viewModel.pages[viewModel.currentPageIndex].pdfPageIndex == nil { paperMenu }
+                Button("Add Page", systemImage: "doc.badge.plus") {
+                    viewModel.addPage(after: viewModel.currentPageIndex)
+                }
+                Toggle(isOn: $viewModel.allowsFingerDrawing) {
+                    Label("Draw with Finger", systemImage: "hand.draw")
+                }
+                .toggleStyle(.button)
             }
-            Toggle(isOn: $viewModel.allowsFingerDrawing) {
-                Label("Draw with Finger", systemImage: "hand.draw")
-            }
-            .toggleStyle(.button)
         }
     }
 

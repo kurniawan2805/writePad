@@ -11,27 +11,15 @@ struct PDFTools: View {
     @State private var commentPoint: CGPoint?
 
     var body: some View {
-        Toggle(isOn: $pdf.isDrawing) {
-            Label("Draw on PDF", systemImage: "pencil.tip")
+        if !viewModel.isReadOnly {
+            Toggle(isOn: $pdf.isDrawing) {
+                Label("Draw on PDF", systemImage: "pencil.tip")
+            }
+            .toggleStyle(.button)
         }
-        .toggleStyle(.button)
         Menu {
             Button("Pages, Outline, Search & Comments", systemImage: "sidebar.left", action: showNavigation)
-            Divider()
-            Button("Highlight Selection", systemImage: "highlighter") { annotate(.highlight) }
-            Button("Underline Selection", systemImage: "underline") { annotate(.underline) }
-            Button("Strikethrough Selection", systemImage: "strikethrough") { annotate(.strikeOut) }
-            Button("Add Comment", systemImage: "note.text.badge.plus") {
-                let index = viewModel.currentPageIndex
-                commentPageID = viewModel.pages[index].id
-                if let page = pdf.document.page(at: index), let selection = pdf.view?.currentSelection,
-                   selection.pages.contains(page) {
-                    commentPoint = selection.bounds(for: page).origin
-                } else {
-                    commentPoint = nil
-                }
-                showsComment = true
-            }
+            if !viewModel.isReadOnly { markupActions }
         } label: {
             Label("PDF Tools", systemImage: "doc.text.magnifyingglass")
         }
@@ -44,6 +32,25 @@ struct PDFTools: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text("Turn off Draw on PDF, then touch and hold text to select it. You can also select a search result.")
+        }
+    }
+
+    @ViewBuilder
+    private var markupActions: some View {
+        Divider()
+        Button("Highlight Selection", systemImage: "highlighter") { annotate(.highlight) }
+        Button("Underline Selection", systemImage: "underline") { annotate(.underline) }
+        Button("Strikethrough Selection", systemImage: "strikethrough") { annotate(.strikeOut) }
+        Button("Add Comment", systemImage: "note.text.badge.plus") {
+            let index = viewModel.currentPageIndex
+            commentPageID = viewModel.pages[index].id
+            if let page = pdf.document.page(at: index), let selection = pdf.view?.currentSelection,
+               selection.pages.contains(page) {
+                commentPoint = selection.bounds(for: page).origin
+            } else {
+                commentPoint = nil
+            }
+            showsComment = true
         }
     }
 

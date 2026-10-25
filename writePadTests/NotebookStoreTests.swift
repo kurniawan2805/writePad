@@ -106,14 +106,53 @@ struct NotebookStoreTests {
         #expect(try spaced.loadDrawing(pageID: manifest.pages[0].id, notebookID: manifest.id).strokes.count == 1)
     }
 
-    @Test func newerFormatVersionIsRejected() throws {
+    @Test func newerFormatVersionOpensReadOnlyAndIsNeverWritten() throws {
         var manifest = try store.createNotebook(title: "Future")
         manifest.version = NotebookManifest.currentVersion + 1
         try store.saveManifest(manifest)
+        let url = store.packageURL(for: manifest.id).appending(path: "manifest.json")
+        let before = try Data(contentsOf: url)
 
+        let load = try store.loadManifestReport(id: manifest.id)
+        #expect(load.isReadOnly)
+        #expect(!load.notices.isEmpty)
+        #expect(try store.listNotebooks().map(\.id) == [manifest.id])
+
+        manifest.title = "Renamed by an older build"
         #expect(throws: NotebookStore.StoreError.unsupportedVersion(manifest.version)) {
-            try store.loadManifest(id: manifest.id)
+            try store.saveManifest(manifest)
         }
+        #expect(throws: NotebookStore.StoreError.unsupportedVersion(manifest.version)) {
+            try store.write(NotebookStore.SaveSnapshot(manifest: manifest))
+        }
+        #expect(try Data(contentsOf: url) == before)
+    }
+
+    @Test func unknownManifestAndPageFieldsSurviveLoadAndSave() throws {
+        let manifest = try store.createNotebook(title: "Mixed builds")
+        let url = store.packageURL(for: manifest.id).appending(path: "manifest.json")
+        var json = try #require(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
+        json["tags"] = ["physics", "week 3"]
+        json["coverColor"] = ["r": 0.2, "g": 0.4, "b": 1, "named": NSNull()]
+        var pages = try #require(json["pages"] as? [[String: Any]])
+        pages[0]["template"] = "cornell"
+        pages[0]["zoom"] = 1.5
+        json["pages"] = pages
+        try JSONSerialization.data(withJSONObject: json).write(to: url)
+
+        var loaded = try store.loadManifest(id: manifest.id)
+        loaded.title = "Renamed"
+        try store.saveManifest(loaded)
+
+        let saved = try #require(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
+        #expect(saved["title"] as? String == "Renamed")
+        #expect(saved["tags"] as? [String] == ["physics", "week 3"])
+        let cover = try #require(saved["coverColor"] as? [String: Any])
+        #expect(cover["r"] as? Double == 0.2)
+        #expect(cover["named"] is NSNull)
+        let page = try #require((saved["pages"] as? [[String: Any]])?.first)
+        #expect(page["template"] as? String == "cornell")
+        #expect(page["zoom"] as? Double == 1.5)
     }
 
     static func sampleDrawing() -> PKDrawing {

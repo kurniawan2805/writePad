@@ -40,7 +40,8 @@ writePad/Models/            Codable models: NotebookManifest, PageInfo, PageBack
 writePad/Storage/           NotebookStore — reads/writes .writepad packages
 writePad/Features/Editor/   NotebookCanvasView (one zoomable PKCanvasView, pages stacked), PageLayout
                             (page geometry + merge/split of per-page drawings), PageBackgroundRenderer,
-                            EditorViewModel, NotebookEditorView, PageSidebarView
+                            EditorViewModel (+ saving extension), SaveTiming, PageThumbnailJob,
+                            NotebookEditorView, PageSidebarView
 writePad/Features/Library/  LibraryView/ViewModel (SwiftData index, folders, search, sort), NotebookCard
 writePad/Features/PDF/      PDFNotebook (document, markups, outline, search), PDFCanvasView (PDFView +
                             per-page PKCanvasView overlays), PDFSidebarView, PDFTools
@@ -52,7 +53,8 @@ TestSupport/                shared by both test targets (e.g. PDFFixture builds 
 
 ## Rules
 - **Never edit `writePad.xcodeproj` by hand.** Change `project.yml`, then run `xcodegen generate`. The generated project is committed so it opens with a double-click.
-- **Never lose ink.** All writes use `.atomic`; save order is ink → annotations → manifest → delete removed pages. Autosave is debounced (1 s) but starts within 5 s of the first unsaved change, retries failures with backoff (`SaveTiming`), and is flushed when the scene leaves `.active`. Keep all of these working when touching the editor.
+- **Never lose ink.** All writes use `.atomic`; one save is `NotebookStore.write(_:)`: ink → annotations → manifest → delete removed pages. Autosave is debounced (1 s) but starts within 5 s of the first unsaved change, retries failures with backoff (`SaveTiming`), and runs on the editor's serial `writeQueue` off the main actor. `saveNow()` is the synchronous flush (scene leaves `.active`, notebook closes, tests): it waits for a running write and rewrites what that write carried. Keep all of these working when touching the editor.
+- Thumbnails render off the main actor (`PageThumbnailJob`); PDF pages come from a private copy of the document, never the one the `PDFView` shows. Tests that read `thumbnails` must `await editor.waitForThumbnails()` first.
 - **File format** (`<uuid>.writepad/`, currently version 3):
   - `manifest.json`: title, dates (ISO 8601 with milliseconds), ordered pages. A page with `pdfPageIndex` shows that page of `source.pdf`; without it, it is paper.
   - `pages/<pageId>.drawing`: `PKDrawing.dataRepresentation()` in page coordinates.
@@ -61,6 +63,8 @@ TestSupport/                shared by both test targets (e.g. PDFFixture builds 
   - `manifest.prev.json`: the previous valid manifest, read when `manifest.json` is missing or undecodable.
   - `*.corrupt`: undecodable files are renamed, never overwritten or deleted. A file that exists but can't be *read* is not damage: loading stops with an error instead of falling back.
   - Drawing files newer than the manifest but not listed in it are recovered as pages (a save crashed between ink and manifest).
+  - Unknown keys in the manifest and in each page are kept (`unknownFields`, `JSONValue`) and written back unchanged.
+  - A manifest with a newer `version` opens **read-only** (`EditorViewModel.isReadOnly`); `NotebookStore.ensureWritable` refuses every write to it. One this build can't decode at all throws `unsupportedVersion` and is left untouched, never quarantined.
   - Any format change must bump `NotebookManifest.currentVersion` and keep loading older versions.
 - **The library index is a cache.** Packages on disk are the source of truth for titles and dates; SwiftData only adds folders. `LibraryViewModel.refresh()` re-syncs from packages.
 - **UI tests must not touch real data.** Debug builds honor `WRITEPAD_STORAGE_NAMESPACE` (see `StorageLocation`); `XCUIApplication.isolated()` sets it. Launch the app before `app.open(url)` so the namespace applies.

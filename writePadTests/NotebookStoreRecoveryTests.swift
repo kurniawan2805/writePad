@@ -121,10 +121,23 @@ struct NotebookStoreRecoveryTests {
         try store.saveManifest(manifest)
         let before = try Data(contentsOf: manifestURL(manifest.id))
 
-        #expect(throws: NotebookStore.StoreError.unsupportedVersion(manifest.version)) {
-            try store.loadManifest(id: manifest.id)
-        }
+        let load = try store.loadManifestReport(id: manifest.id)
+        #expect(load.isReadOnly)
+        #expect(load.manifest.title == "Second")
         #expect(try Data(contentsOf: manifestURL(manifest.id)) == before)
+        #expect(!exists(manifestURL(manifest.id).appendingPathExtension("corrupt")))
+    }
+
+    @Test func newerManifestThisBuildCannotDecodeIsLeftAloneAndNotSwappedForTheBackup() throws {
+        let manifest = try notebookWithBackup()
+        // A future format: newer version, and `pages` changed shape.
+        let future = Data(#"{"version": \#(NotebookManifest.currentVersion + 1), "pages": {"layout": "infinite"}}"#.utf8)
+        try future.write(to: manifestURL(manifest.id))
+
+        #expect(throws: NotebookStore.StoreError.unsupportedVersion(NotebookManifest.currentVersion + 1)) {
+            try store.loadManifestReport(id: manifest.id)
+        }
+        #expect(try Data(contentsOf: manifestURL(manifest.id)) == future)
         #expect(!exists(manifestURL(manifest.id).appendingPathExtension("corrupt")))
     }
 

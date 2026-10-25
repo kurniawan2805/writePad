@@ -70,7 +70,6 @@ enum PageBackgroundRenderer {
     }
 
     /// A PDF page with its page-local ink, sized to the page's displayed (cropped, rotated) shape.
-    @MainActor
     static func thumbnail(pdfPage: PDFPage, drawing: PKDrawing, width: CGFloat) -> UIImage {
         let size = PDFPageCanvas.displaySize(for: pdfPage)
         let target = CGSize(width: width, height: width * size.height / size.width)

@@ -87,11 +87,11 @@ karena arsitekturnya berbeda dan aturan "tanpa dependensi baru" tidak melarang, 
 | Urutan tulis: ink dulu, manifest terakhir | `write(_:)` | **sudah ada** (`EditorViewModel.saveNow`: ink, markup PDF, lalu manifest) | - |
 | Batas latensi simpan (maksimal 5 s) di atas debounce | `scheduleSave` | **selesai (M6)**: `SaveTiming` | S |
 | Retry dengan backoff dan notifikasi gagal simpan | `performSave` | **selesai (M6)**: 1 s berlipat, maks 60 s, banner tetap ada | S |
-| IO simpan di luar main thread | actor `NotebookPackage` | **belum** (sisa M6): `saveNow` masih sinkron di `@MainActor` | M |
+| IO simpan di luar main thread | actor `NotebookPackage` | **selesai (M6)**: antrean tulis serial; `saveNow` tetap sinkron untuk flush | M |
 | Pemeriksaan header `PKDrawing` kosong palsu | `decodeInk` | **selesai (M6)** | S |
 | Pemulihan halaman yatim setelah crash | `recoverOrphans` | **selesai (M6)** | M |
 | Simpan hanya halaman yang kotor (per-halaman) | `makePendingSave` | **sudah ada** (`dirtyPageIDs`) | - |
-| Pertahankan field tak dikenal (JSON passthrough) | `JSONValue`, `ManifestCodec` | **belum** (sisa M6) | M |
+| Pertahankan field tak dikenal (JSON passthrough) | `JSONValue`, `ManifestCodec` | **selesai (M6)**: manifest dan halaman; manifest versi lebih baru dibuka read-only | M |
 
 Catatan: ini sebagian besar mengisi celah yang ada di `AGENTS.md` ("Never lose ink"). Sudah dijadikan Milestone 6 "Storage hardening" di `PLAN.md`.
 
@@ -158,4 +158,4 @@ Catatan: ini sebagian besar mengisi celah yang ada di `AGENTS.md` ("Never lose i
 - [ ] Membaca `LibrarySync.swift`, `SyncCenter.swift`, dan `NotebookRecorder.swift` (audit sync).
 - [ ] Menjalankan test suite mereka di simulator untuk memeriksa klaim "tests pass".
 - [ ] Membandingkan `ShapeRecognizer` dengan implementasi alternatif sebelum memilih pendekatan.
-- [x] Memutuskan item P1 mana yang masuk `PLAN.md` (Milestone 6, 6 dari 8 item teknis selesai per 25 Okt 2026).
+- [x] Memutuskan item P1 mana yang masuk `PLAN.md` (Milestone 6, semua 8 item teknis selesai per 25 Okt 2026; tinggal uji di iPad asli).
