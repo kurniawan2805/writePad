@@ -19,7 +19,7 @@
 
 writePad brings handwritten notebooks and PDF annotation into one local library. Write with Apple Pencil, organize pages and folders, mark up documents, and share your work as PDF or PNG.
 
-**Status:** an early development build. Core notebook, PDF, and export workflows are implemented; real iPad testing and further storage and performance work remain. See the [roadmap](PLAN.md) and [device checklist](docs/MILESTONE5_QA.md) for progress and known issues.
+**Status:** an early development build. Core notebook, PDF, and export workflows are implemented; real iPad testing and further storage and performance work remain. See the [roadmap](PLAN.md) and [device checklist](docs/DEVICE-CHECKS.md) for progress and known issues.
 
 ## Features
 
@@ -83,6 +83,8 @@ See the [PDF workflow guide](docs/MILESTONE4_QA.md) for navigation, annotations,
 
 ## Development and testing
 
+[GitHub Actions](.github/workflows/ci.yml) generates the project, runs strict SwiftLint, and builds/runs unit tests on every push and pull request. It uses GitHub's [Xcode 27 runner](https://github.com/actions/runner-images/blob/main/images/macos/xcode-27-arm64-Readme.md) and selects an installed iPad automatically. To run UI tests and accessibility audits, choose **Actions → iPad CI → Run workflow** and enable **ui_tests**.
+
 Unit tests use Swift Testing; UI tests use XCUITest. Run tests on an iPad simulator:
 
 ```sh
@@ -105,7 +107,7 @@ If that simulator is unavailable, list installed devices with `xcrun simctl list
 
 UI tests launch with an isolated storage namespace through `XCUIApplication.isolated()` so they do not use personal notebooks. Keep this isolation when adding tests.
 
-The simulator enables finger drawing by default. Apple Pencil pressure, tilt, palm rejection, and latency require a real iPad. Large PDFs, memory pressure, and interrupted-save scenarios also have a [device acceptance checklist](docs/MILESTONE5_QA.md).
+The simulator enables finger drawing by default. Apple Pencil pressure, tilt, palm rejection, and latency require a real iPad. Large PDFs, memory pressure, and interrupted-save scenarios also have a [device acceptance checklist](docs/DEVICE-CHECKS.md).
 
 ## Architecture
 

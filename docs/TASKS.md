@@ -12,22 +12,24 @@ Phase 2 work (see `PLAN.md` §4) split into tasks any agent can pick up. Read `A
 - Every task must keep the full test suite green (`AGENTS.md` → Commands) and add tests for its logic. UI-only changes need at least one UI test step or a screenshot check.
 - Anything that changes the `.writepad` format must bump `NotebookManifest.currentVersion` and keep older files loading. Those tasks are **L** by default.
 
-## Open tasks
+## Tasks
 
 | ID | Task | Diff. | Suggested owner | Status |
 |---|---|---|---|---|
 | T1 | Shape snap: draw and hold to straighten lines, ellipses, rectangles, triangles | L | Claude | done (see T1 notes) |
-| T2 | Page templates: Cornell, music staff, planner week | S | Codex / cheaper | in progress (Codex, 2026-10-25) |
-| T3 | Bookmarks: star pages, Bookmarks filter in the page sidebar | S | Codex / cheaper | in progress (Codex, 2026-10-25) |
-| T4 | CI: GitHub Actions build + unit tests on every push | S | Codex / cheaper | in progress (Codex, 2026-10-25) |
-| T5 | `docs/DEVICE-CHECKS.md`: one checklist of every real-iPad check | S | Codex / cheaper | in progress (Codex, 2026-10-25) |
-| T6 | Accessibility audit in UI tests (light, dark, large text) | S | Codex / cheaper | in progress (Codex, 2026-10-25) |
+| T2 | Page templates: Cornell, music staff, planner week | S | Codex / cheaper | done (b63e753) |
+| T3 | Bookmarks: star pages, Bookmarks filter in the page sidebar | S | Codex / cheaper | done (7530063) |
+| T4 | CI: GitHub Actions build + unit tests on every push | S | Codex / cheaper | done (bac103b, 73550ee) |
+| T5 | `docs/DEVICE-CHECKS.md`: one checklist of every real-iPad check | S | Codex / cheaper | done (f56953c) |
+| T6 | Accessibility audit in UI tests (light, dark, large text) | S | Codex / cheaper | done (a407927) |
 | T7 | Recently Deleted: 30-day soft delete for notebooks | M | Codex | open |
 | T8 | Thumbnail cache on disk (`thumb.png` per page), library cards read it | M | Codex | open |
-| T9 | Page items: text boxes and images on pages (format v4) | L | Claude | open |
+| T9 | Page items: text boxes and images on pages (format v5) | L | Claude | open |
 | T10 | Vector ink in PDF export (no rasterized strokes) | L | Claude | open |
 | T11 | Custom pen tray (favorite pens) replacing `PKToolPicker` | L | Claude | open |
 | T12 | Multiple windows / two notebooks side by side | M | Claude or Codex after design | open |
+
+Verification: [T2–T6 simulator QA](T2-T6_QA.md).
 
 ## Task notes
 
@@ -84,7 +86,7 @@ otherwise renders and writes it. Not part of the format: a missing or stale file
 
 ### T9 Page items (L)
 Text boxes and images positioned on pages, stored per page in the package. Needs a design note first (model, file
-layout, hit testing vs. PencilKit gestures, export, undo). Format v4.
+layout, hit testing vs. PencilKit gestures, export, undo). Format v5; version 4 is used by T2 templates.
 
 ### T10 Vector ink in PDF export (L)
 Draw `PKStroke` paths as vector shapes in `NotebookExporter` for pen, monoline and marker inks; keep raster for
