@@ -31,9 +31,12 @@ final class AccessibilityUITests: XCTestCase {
         name.typeText("Accessibility Notes\n")
         let notebook = app.buttons.containing(.staticText, identifier: "Accessibility Notes").firstMatch
         XCTAssertTrue(notebook.waitForExistence(timeout: 5), app.debugDescription)
-        let url = URL.temporaryDirectory.appending(path: "Accessibility PDF \(UUID().uuidString).pdf")
+        // Keep the visible title stable for the OCR-based accessibility audit.
+        let fixtureFolder = URL.temporaryDirectory.appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: fixtureFolder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: fixtureFolder) }
+        let url = fixtureFolder.appending(path: "Accessibility PDF.pdf")
         try PDFFixture.data().write(to: url, options: .atomic)
-        defer { try? FileManager.default.removeItem(at: url) }
         app.open(url)
         let pdf = app.buttons.containing(.staticText, identifier: url.deletingPathExtension().lastPathComponent).firstMatch
         XCTAssertTrue(pdf.waitForExistence(timeout: 15))
