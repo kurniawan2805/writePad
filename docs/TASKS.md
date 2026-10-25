@@ -26,8 +26,8 @@ Phase 2 work (see `PLAN.md` §4) split into tasks any agent can pick up. Read `A
 | T8 | Thumbnail cache on disk (`thumb.png` for the first page), library cards read it | M | Codex | done (Codex, 2026-10-25; 121 unit + 10 UI tests passed across runs) |
 | T9 | Page items: text boxes and images on pages (format v5) | L | Codex after design | done (6733ddb; 138 unit + 12 UI tests passed) |
 | T10 | Vector ink in PDF export (no rasterized strokes) | L | Codex after design | done (46fb94d; 145 unit + 12 UI tests passed across runs) |
-| T11 | Custom pen tray (favorite pens) replacing `PKToolPicker` | L | Claude | open |
-| T12 | Multiple windows / two notebooks side by side | M | Claude or Codex after design | open |
+| T11 | Custom pen tray (favorite pens) replacing `PKToolPicker` | L | Codex after design | in progress (Codex, 2026-10-25) |
+| T12 | Multiple windows / two notebooks side by side | M | Codex after design | in progress (Codex, 2026-10-25) |
 | T13 | Fix imported PDF library preview retaining its source document during rendering | S | Codex | done (78d4145; 121 unit tests passed) |
 
 Verification: [T2–T6 simulator QA](T2-T6_QA.md).
@@ -101,10 +101,12 @@ textured inks (pencil, crayon, watercolor). Needs pixel-diff tests against `PKDr
 Design: [T10 design](T10_DESIGN.md). Implementation, pixel metrics and simulator verification: [T10 QA](T10_QA.md).
 
 ### T11 Custom pen tray (L)
+Design: [T11 / T12 design](T11_T12_DESIGN.md).
 Own toolbar with up to 8 pen presets (ink, width, color), eraser and lasso, persisted per user. Must handle Apple
 Pencil double-tap / squeeze (`UIPencilInteraction`) that `PKToolPicker` handles today.
 
 ### T12 Multiple windows (M)
+Design: [T11 / T12 design](T11_T12_DESIGN.md).
 `UIApplicationSupportsMultipleScenes`, one `LibraryViewModel` per scene sharing one store, and a guard so the same
 notebook can't be open for writing in two windows at once (second opens read-only). Design the guard before coding.
 
