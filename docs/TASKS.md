@@ -35,6 +35,8 @@ Phase 2 work (see `PLAN.md` §4) split into tasks any agent can pick up. Read `A
 | T17 | No duplicate highlights on the same text; highlight color choice | S | Codex / cheaper | open |
 | T18 | Eraser mode choice: whole-stroke vs. pixel, in the pen tray | S | Codex / cheaper | open |
 | T19 | Measure ink latency on a 100+ page notebook (`drawingDidChange` splits every page) | M | needs real iPad | open |
+| T20 | VoiceOver on link-dense PDF pages (PDFKit accessibility tree fails) | M | needs real iPad | open |
+| T21 | PDF search: debounce off the main actor, show text around each match | S | Codex / cheaper | open |
 
 Verification: [T2–T6 simulator QA](T2-T6_QA.md).
 
@@ -167,4 +169,26 @@ favorites; long-press the eraser button to switch.
 `EditorViewModel.drawingDidChange(_:)` splits the whole combined drawing and compares every page on each stroke, on
 the main actor. Measure with a 100+ page notebook full of ink on a real iPad before optimizing (e.g. only re-split
 strokes whose bounds changed).
+
+## 100+ page PDF tests (2026-10-25)
+`LargePDFTests` (model) and `LargePDFUITests` (real gestures) run on a generated 120-page book, or on a real
+document: `TEST_RUNNER_WRITEPAD_LARGE_PDF=/path/to/book.pdf xcodebuild test …` (see `AGENTS.md`). Results with Think
+Python 2e (244 pages, 240 outline items, ~150 links per index page) on the iPad Pro 11-inch (M5) simulator:
+open 0.13 s, all thumbnails 1.0 s, save 20 ms, add/delete/move page 0.13 s each, reopen 0.19 s, export 0.26 s
+(886 KB → 1.26 MB, text kept); UI: open 2.3 s, undo jumping back 221 pages 2.8 s, export to share sheet 4.8 s.
+Sampling the app while flinging through it: main thread 68% idle, writePad's own code under 1%.
+
+### T20 VoiceOver on link-dense pages (M, device)
+With a page holding ~130+ link annotations on screen (Think Python's index), XCUITest can't snapshot the app any more
+(`kAXErrorIllegalArgument` on the application element) until the page scrolls away. It happens with writePad's page
+overlays and accessibility override removed, so it is PDFKit's; the generated book and pages with a few links are
+fine. Check VoiceOver on such a page on a device; if it fails too, consider hiding link annotations from
+accessibility (`PDFView`/`PDFPage` accessibility elements) and offering links another way.
+
+### T21 PDF search (S)
+`PDFSidebarView` calls `PDFNotebook.search` on every keystroke, synchronously on the main actor: the first letter
+of a 244-page book matches 33,168 times in 0.48 s (simulator on a Mac; slower on an iPad), and the list shows only the
+matched word ("the", "The"). Debounce ~300 ms, search with `PDFDocument.beginFindString` or on a background copy,
+require 2+ characters, cap the list (e.g. first 500 with a count), and show the line around each match
+(`PDFSelection.extendForLineBoundaries`).
 

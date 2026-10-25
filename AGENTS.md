@@ -29,6 +29,8 @@ xcodebuild test -project writePad.xcodeproj -scheme writePad \
   -destination 'platform=iOS Simulator,name=iPad Pro 11-inch (M5)' -derivedDataPath build \
   -collect-test-diagnostics never -only-testing:writePadTests
 ```
+Scale tests (`LargePDFTests`, `LargePDFUITests`) use a generated 120-page PDF; to run them on a real document add
+`TEST_RUNNER_WRITEPAD_LARGE_PDF=/absolute/path/book.pdf` before `xcodebuild` (don't commit large PDFs).
 UI tests take several minutes. Without `-collect-test-diagnostics never`, a hung run spends up to 10 minutes in `simctl diagnose`.
 If `name=` matching fails, use `xcrun simctl list devices available | grep iPad` and pass `id=<UUID>`.
 
