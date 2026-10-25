@@ -2,7 +2,7 @@ import Foundation
 
 /// Contents of `manifest.json` inside a `.writepad` package.
 struct NotebookManifest: Codable, Equatable, Identifiable, Sendable {
-    static let currentVersion = 1
+    static let currentVersion = 3
 
     var id: UUID
     var title: String
@@ -24,10 +24,12 @@ struct NotebookManifest: Codable, Equatable, Identifiable, Sendable {
 struct PageInfo: Codable, Equatable, Identifiable, Sendable {
     var id: UUID
     var background: PageBackground
+    var pdfPageIndex: Int?
 
-    init(id: UUID = UUID(), background: PageBackground = .blank) {
+    init(id: UUID = UUID(), background: PageBackground = .blank, pdfPageIndex: Int? = nil) {
         self.id = id
         self.background = background
+        self.pdfPageIndex = pdfPageIndex
     }
 }
 

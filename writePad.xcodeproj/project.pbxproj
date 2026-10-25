@@ -7,19 +7,40 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1AB413289CE854EE04085BAA /* NotebookExporterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D640B6FC1762EBBE8289CFB /* NotebookExporterTests.swift */; };
+		1CBCC9CF328E931A88A6B21A /* LibraryUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F73703103D2B2613BC39683A /* LibraryUITests.swift */; };
 		3483687DE3F09FC3D6FF797B /* EditorViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6F609D7C8B27F57E0FE5E6A /* EditorViewModel.swift */; };
 		36FBA0185963D4A61193B066 /* PageSidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CA1678FDDC29CA7F4EDDEEC /* PageSidebarView.swift */; };
 		37DFFC56021978DE326B4526 /* EditorViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B73AFAE4885C12A28D8D225D /* EditorViewModelTests.swift */; };
+		443A6AE1A94503A22DB14489 /* AutosaveSafetyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5EF46A9028D73AB93CC6413 /* AutosaveSafetyTests.swift */; };
+		56E9D100BA87131CF689E833 /* ExportUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C88F5CC250913402D4767F60 /* ExportUITests.swift */; };
+		579D0455D02A71F704AD9EB6 /* NotebookExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12EC02585BEB6C3617044B51 /* NotebookExporter.swift */; };
 		715B012C14FC08947F517108 /* NotebookStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB6ED5CBCD264609821E18C1 /* NotebookStoreTests.swift */; };
 		7566FD788F3508B42B2FE09E /* PageLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B638A54EEF27B7E89165C8D /* PageLayout.swift */; };
+		7CD4719B83836D242892BD93 /* LibraryViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9F64E0C1E67A39ACB58BD3E /* LibraryViewModelTests.swift */; };
+		7F033E0D635439C0C06C2E9A /* PDFMarkup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C5D68F35B533EA90458C373 /* PDFMarkup.swift */; };
+		87863BEBB2F6F2FDD77900E4 /* PDFNotebook.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4987411577850939DD3A9701 /* PDFNotebook.swift */; };
 		8D7069CCE7CA8F1506FE4DE6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 6B889B60CDA1A3D13C10D300 /* Assets.xcassets */; };
 		9230615BD57C7CD5B603FD24 /* Notebook.swift in Sources */ = {isa = PBXBuildFile; fileRef = 281B1526F94B10F201FE3661 /* Notebook.swift */; };
 		99DB2A6F22247F5123A71DB7 /* CanvasView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74184EE18E9060014A92676F /* CanvasView.swift */; };
+		A0A4C27E66ED44F8C9252835 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C94C12F02D2AE77891F4F24 /* LibraryView.swift */; };
+		AE6C5BB9C0FA8EAB60327408 /* LibraryItemForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0867D2DDEB7305ABDAA42CF /* LibraryItemForm.swift */; };
+		B2FCF2ACFB11BC3D98572D38 /* PDFSidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A44469F9124D1C7A4DE730FE /* PDFSidebarView.swift */; };
 		B97DED9E41C5E033EF3BF59C /* PageLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68E4EDC773BDB52EF1E79F35 /* PageLayoutTests.swift */; };
 		BCDEDA57FED8E4655B9B6DE5 /* NotebookStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD4A504E222BC30442CB93DC /* NotebookStore.swift */; };
+		BFD8AB800833FF087BCE2DEA /* PDFTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 013A278508B36ABB393925B5 /* PDFTools.swift */; };
+		C8C8A1ED1E47A1A9E1288E04 /* PDFFixture.swift in Sources */ = {isa = PBXBuildFile; fileRef = F628CE17394D00EC9E7BBBB9 /* PDFFixture.swift */; };
+		CA71041350FBF8D9F5DBC039 /* PDFCanvasView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C5D7E95A6842D16EE7949BC /* PDFCanvasView.swift */; };
 		D40BB9571E89EE832209093E /* NotebookEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BAA1C0C046196B1E63162D6 /* NotebookEditorView.swift */; };
+		D5A9EC582CCAE86695B9D95B /* ExportMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 532BA4A0B041AD254C71DD83 /* ExportMenu.swift */; };
+		DBB559C16BE2E5D6514D02AF /* NotebookCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A85986B1FD02E99ADC019409 /* NotebookCard.swift */; };
+		DD17AADC9A8C5CD076548810 /* LibraryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EA3954287783BCAB58C6280 /* LibraryViewModel.swift */; };
+		DEE459914647482892E87304 /* PDFNotebookTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8556235797F109C4B39F7C2 /* PDFNotebookTests.swift */; };
+		E229FF7365DD75B61DCA577E /* LibraryMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = E98039E3EBFCC1F9B19545A1 /* LibraryMetadata.swift */; };
+		E2DF07043AD07E32CAFDF3D6 /* PDFFixture.swift in Sources */ = {isa = PBXBuildFile; fileRef = F628CE17394D00EC9E7BBBB9 /* PDFFixture.swift */; };
 		E6171359778B1A61BA35DA47 /* PageBackgroundRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EDAE21608C299BE127732A0 /* PageBackgroundRenderer.swift */; };
 		F6CE1188E220A93FC241C2D3 /* writePadApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 148587FFBFA085F8E2FDEBAC /* writePadApp.swift */; };
+		FFB6E8F51F0C10BD9CA567DF /* PDFUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7AA3858E8A0A5127ECA3F52 /* PDFUITests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -30,13 +51,29 @@
 			remoteGlobalIDString = 93382D71EDD5F2BA9B63F9CD;
 			remoteInfo = writePad;
 		};
+		F609285BE91786D86A8643CE /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F635A182DBB7AA124AB2DC59 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 93382D71EDD5F2BA9B63F9CD;
+			remoteInfo = writePad;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		013A278508B36ABB393925B5 /* PDFTools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFTools.swift; sourceTree = "<group>"; };
 		04CCEFEA41EBC46A589DF8FC /* writePad.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = writePad.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		0C5D68F35B533EA90458C373 /* PDFMarkup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFMarkup.swift; sourceTree = "<group>"; };
+		12EC02585BEB6C3617044B51 /* NotebookExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotebookExporter.swift; sourceTree = "<group>"; };
 		148587FFBFA085F8E2FDEBAC /* writePadApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = writePadApp.swift; sourceTree = "<group>"; };
 		1CA1678FDDC29CA7F4EDDEEC /* PageSidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageSidebarView.swift; sourceTree = "<group>"; };
+		1D640B6FC1762EBBE8289CFB /* NotebookExporterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotebookExporterTests.swift; sourceTree = "<group>"; };
 		281B1526F94B10F201FE3661 /* Notebook.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notebook.swift; sourceTree = "<group>"; };
+		2EA3954287783BCAB58C6280 /* LibraryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryViewModel.swift; sourceTree = "<group>"; };
+		4987411577850939DD3A9701 /* PDFNotebook.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFNotebook.swift; sourceTree = "<group>"; };
+		4C94C12F02D2AE77891F4F24 /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
+		532BA4A0B041AD254C71DD83 /* ExportMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportMenu.swift; sourceTree = "<group>"; };
+		5C5D7E95A6842D16EE7949BC /* PDFCanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFCanvasView.swift; sourceTree = "<group>"; };
 		68E4EDC773BDB52EF1E79F35 /* PageLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageLayoutTests.swift; sourceTree = "<group>"; };
 		6B889B60CDA1A3D13C10D300 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		74184EE18E9060014A92676F /* CanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasView.swift; sourceTree = "<group>"; };
@@ -44,10 +81,22 @@
 		8EDAE21608C299BE127732A0 /* PageBackgroundRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageBackgroundRenderer.swift; sourceTree = "<group>"; };
 		9B369D1751F623454EDA5D5E /* writePadTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = writePadTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9B638A54EEF27B7E89165C8D /* PageLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageLayout.swift; sourceTree = "<group>"; };
+		A44469F9124D1C7A4DE730FE /* PDFSidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFSidebarView.swift; sourceTree = "<group>"; };
+		A5EF46A9028D73AB93CC6413 /* AutosaveSafetyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutosaveSafetyTests.swift; sourceTree = "<group>"; };
+		A85986B1FD02E99ADC019409 /* NotebookCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotebookCard.swift; sourceTree = "<group>"; };
 		B73AFAE4885C12A28D8D225D /* EditorViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorViewModelTests.swift; sourceTree = "<group>"; };
+		B8556235797F109C4B39F7C2 /* PDFNotebookTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFNotebookTests.swift; sourceTree = "<group>"; };
+		C88F5CC250913402D4767F60 /* ExportUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportUITests.swift; sourceTree = "<group>"; };
 		CD4A504E222BC30442CB93DC /* NotebookStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotebookStore.swift; sourceTree = "<group>"; };
+		D0867D2DDEB7305ABDAA42CF /* LibraryItemForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryItemForm.swift; sourceTree = "<group>"; };
+		D7AA3858E8A0A5127ECA3F52 /* PDFUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFUITests.swift; sourceTree = "<group>"; };
 		DB6ED5CBCD264609821E18C1 /* NotebookStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotebookStoreTests.swift; sourceTree = "<group>"; };
 		E6F609D7C8B27F57E0FE5E6A /* EditorViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorViewModel.swift; sourceTree = "<group>"; };
+		E98039E3EBFCC1F9B19545A1 /* LibraryMetadata.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryMetadata.swift; sourceTree = "<group>"; };
+		ECE27C6080F3BBB2EA263328 /* writePadUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = writePadUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		F628CE17394D00EC9E7BBBB9 /* PDFFixture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFFixture.swift; sourceTree = "<group>"; };
+		F73703103D2B2613BC39683A /* LibraryUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryUITests.swift; sourceTree = "<group>"; };
+		F9F64E0C1E67A39ACB58BD3E /* LibraryViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryViewModelTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -57,6 +106,17 @@
 				148587FFBFA085F8E2FDEBAC /* writePadApp.swift */,
 			);
 			path = App;
+			sourceTree = "<group>";
+		};
+		17DD1279B0200AC6D48186A9 /* PDF */ = {
+			isa = PBXGroup;
+			children = (
+				5C5D7E95A6842D16EE7949BC /* PDFCanvasView.swift */,
+				4987411577850939DD3A9701 /* PDFNotebook.swift */,
+				A44469F9124D1C7A4DE730FE /* PDFSidebarView.swift */,
+				013A278508B36ABB393925B5 /* PDFTools.swift */,
+			);
+			path = PDF;
 			sourceTree = "<group>";
 		};
 		393C0E628E0D67C8665E7FE1 /* Editor */ = {
@@ -75,9 +135,21 @@
 		528E84A88287D9B68F93C4B7 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				E98039E3EBFCC1F9B19545A1 /* LibraryMetadata.swift */,
 				281B1526F94B10F201FE3661 /* Notebook.swift */,
+				0C5D68F35B533EA90458C373 /* PDFMarkup.swift */,
 			);
 			path = Models;
+			sourceTree = "<group>";
+		};
+		5B7FA085C662E4C86CA93CCF /* writePadUITests */ = {
+			isa = PBXGroup;
+			children = (
+				C88F5CC250913402D4767F60 /* ExportUITests.swift */,
+				F73703103D2B2613BC39683A /* LibraryUITests.swift */,
+				D7AA3858E8A0A5127ECA3F52 /* PDFUITests.swift */,
+			);
+			path = writePadUITests;
 			sourceTree = "<group>";
 		};
 		741CF607F9704C2227F525D1 /* Products */ = {
@@ -85,6 +157,7 @@
 			children = (
 				04CCEFEA41EBC46A589DF8FC /* writePad.app */,
 				9B369D1751F623454EDA5D5E /* writePadTests.xctest */,
+				ECE27C6080F3BBB2EA263328 /* writePadUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -101,19 +174,44 @@
 			path = writePad;
 			sourceTree = "<group>";
 		};
+		95D4577B48BA5D846E1C212A /* Export */ = {
+			isa = PBXGroup;
+			children = (
+				532BA4A0B041AD254C71DD83 /* ExportMenu.swift */,
+				12EC02585BEB6C3617044B51 /* NotebookExporter.swift */,
+			);
+			path = Export;
+			sourceTree = "<group>";
+		};
 		99C0EFACD85905210DC8FD9E = {
 			isa = PBXGroup;
 			children = (
+				F33BF61B6C512C8CD8EA95A6 /* TestSupport */,
 				7B9B9DC4DCAB36B3AFFE900D /* writePad */,
 				E2B413779603A0C625C8F286 /* writePadTests */,
+				5B7FA085C662E4C86CA93CCF /* writePadUITests */,
 				741CF607F9704C2227F525D1 /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		BB192C9F601EA520EDE9035A /* Library */ = {
+			isa = PBXGroup;
+			children = (
+				D0867D2DDEB7305ABDAA42CF /* LibraryItemForm.swift */,
+				4C94C12F02D2AE77891F4F24 /* LibraryView.swift */,
+				2EA3954287783BCAB58C6280 /* LibraryViewModel.swift */,
+				A85986B1FD02E99ADC019409 /* NotebookCard.swift */,
+			);
+			path = Library;
 			sourceTree = "<group>";
 		};
 		D6E62C50ACC71889C7A6D170 /* Features */ = {
 			isa = PBXGroup;
 			children = (
 				393C0E628E0D67C8665E7FE1 /* Editor */,
+				95D4577B48BA5D846E1C212A /* Export */,
+				BB192C9F601EA520EDE9035A /* Library */,
+				17DD1279B0200AC6D48186A9 /* PDF */,
 			);
 			path = Features;
 			sourceTree = "<group>";
@@ -121,9 +219,13 @@
 		E2B413779603A0C625C8F286 /* writePadTests */ = {
 			isa = PBXGroup;
 			children = (
+				A5EF46A9028D73AB93CC6413 /* AutosaveSafetyTests.swift */,
 				B73AFAE4885C12A28D8D225D /* EditorViewModelTests.swift */,
+				F9F64E0C1E67A39ACB58BD3E /* LibraryViewModelTests.swift */,
+				1D640B6FC1762EBBE8289CFB /* NotebookExporterTests.swift */,
 				DB6ED5CBCD264609821E18C1 /* NotebookStoreTests.swift */,
 				68E4EDC773BDB52EF1E79F35 /* PageLayoutTests.swift */,
+				B8556235797F109C4B39F7C2 /* PDFNotebookTests.swift */,
 			);
 			path = writePadTests;
 			sourceTree = "<group>";
@@ -142,6 +244,14 @@
 				6B889B60CDA1A3D13C10D300 /* Assets.xcassets */,
 			);
 			path = Resources;
+			sourceTree = "<group>";
+		};
+		F33BF61B6C512C8CD8EA95A6 /* TestSupport */ = {
+			isa = PBXGroup;
+			children = (
+				F628CE17394D00EC9E7BBBB9 /* PDFFixture.swift */,
+			);
+			path = TestSupport;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -164,6 +274,24 @@
 			productName = writePadTests;
 			productReference = 9B369D1751F623454EDA5D5E /* writePadTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		8F2E8A245D14BDE3CAAFB62B /* writePadUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E5279B854C1C6C7005767E7B /* Build configuration list for PBXNativeTarget "writePadUITests" */;
+			buildPhases = (
+				C514AA6AEAB0500C026118CE /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				2304E4FC7AFE5954738151BC /* PBXTargetDependency */,
+			);
+			name = writePadUITests;
+			packageProductDependencies = (
+			);
+			productName = writePadUITests;
+			productReference = ECE27C6080F3BBB2EA263328 /* writePadUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 		93382D71EDD5F2BA9B63F9CD /* writePad */ = {
 			isa = PBXNativeTarget;
@@ -193,6 +321,9 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
+					8F2E8A245D14BDE3CAAFB62B = {
+						TestTargetID = 93382D71EDD5F2BA9B63F9CD;
+					};
 				};
 			};
 			buildConfigurationList = 6F88F2034305F0F15215AA25 /* Build configuration list for PBXProject "writePad" */;
@@ -211,6 +342,7 @@
 			targets = (
 				93382D71EDD5F2BA9B63F9CD /* writePad */,
 				6BE7742F93B403EC11FF3826 /* writePadTests */,
+				8F2E8A245D14BDE3CAAFB62B /* writePadUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -253,9 +385,25 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				443A6AE1A94503A22DB14489 /* AutosaveSafetyTests.swift in Sources */,
 				37DFFC56021978DE326B4526 /* EditorViewModelTests.swift in Sources */,
+				7CD4719B83836D242892BD93 /* LibraryViewModelTests.swift in Sources */,
+				1AB413289CE854EE04085BAA /* NotebookExporterTests.swift in Sources */,
 				715B012C14FC08947F517108 /* NotebookStoreTests.swift in Sources */,
+				C8C8A1ED1E47A1A9E1288E04 /* PDFFixture.swift in Sources */,
+				DEE459914647482892E87304 /* PDFNotebookTests.swift in Sources */,
 				B97DED9E41C5E033EF3BF59C /* PageLayoutTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C514AA6AEAB0500C026118CE /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				56E9D100BA87131CF689E833 /* ExportUITests.swift in Sources */,
+				1CBCC9CF328E931A88A6B21A /* LibraryUITests.swift in Sources */,
+				E2DF07043AD07E32CAFDF3D6 /* PDFFixture.swift in Sources */,
+				FFB6E8F51F0C10BD9CA567DF /* PDFUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -265,9 +413,21 @@
 			files = (
 				99DB2A6F22247F5123A71DB7 /* CanvasView.swift in Sources */,
 				3483687DE3F09FC3D6FF797B /* EditorViewModel.swift in Sources */,
+				D5A9EC582CCAE86695B9D95B /* ExportMenu.swift in Sources */,
+				AE6C5BB9C0FA8EAB60327408 /* LibraryItemForm.swift in Sources */,
+				E229FF7365DD75B61DCA577E /* LibraryMetadata.swift in Sources */,
+				A0A4C27E66ED44F8C9252835 /* LibraryView.swift in Sources */,
+				DD17AADC9A8C5CD076548810 /* LibraryViewModel.swift in Sources */,
 				9230615BD57C7CD5B603FD24 /* Notebook.swift in Sources */,
+				DBB559C16BE2E5D6514D02AF /* NotebookCard.swift in Sources */,
 				D40BB9571E89EE832209093E /* NotebookEditorView.swift in Sources */,
+				579D0455D02A71F704AD9EB6 /* NotebookExporter.swift in Sources */,
 				BCDEDA57FED8E4655B9B6DE5 /* NotebookStore.swift in Sources */,
+				CA71041350FBF8D9F5DBC039 /* PDFCanvasView.swift in Sources */,
+				7F033E0D635439C0C06C2E9A /* PDFMarkup.swift in Sources */,
+				87863BEBB2F6F2FDD77900E4 /* PDFNotebook.swift in Sources */,
+				B2FCF2ACFB11BC3D98572D38 /* PDFSidebarView.swift in Sources */,
+				BFD8AB800833FF087BCE2DEA /* PDFTools.swift in Sources */,
 				E6171359778B1A61BA35DA47 /* PageBackgroundRenderer.swift in Sources */,
 				7566FD788F3508B42B2FE09E /* PageLayout.swift in Sources */,
 				36FBA0185963D4A61193B066 /* PageSidebarView.swift in Sources */,
@@ -278,6 +438,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		2304E4FC7AFE5954738151BC /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 93382D71EDD5F2BA9B63F9CD /* writePad */;
+			targetProxy = F609285BE91786D86A8643CE /* PBXContainerItemProxy */;
+		};
 		90FEF11AEBF65CB2C08C6D09 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 93382D71EDD5F2BA9B63F9CD /* writePad */;
@@ -286,6 +451,23 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		27FF083DCF20D8E40C707992 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.adi.writePadUITests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 2;
+				TEST_TARGET_NAME = writePad;
+			};
+			name = Release;
+		};
 		43A216DB3280114601328888 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -294,6 +476,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "writePad-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = writePad;
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -318,6 +501,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "writePad-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = writePad;
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -491,6 +675,23 @@
 			};
 			name = Release;
 		};
+		D3FAA1656424E7A7F9C1CD13 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.adi.writePadUITests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 2;
+				TEST_TARGET_NAME = writePad;
+			};
+			name = Debug;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -517,6 +718,15 @@
 			buildConfigurations = (
 				45EA097F40E283BA57C089BF /* Debug */,
 				43A216DB3280114601328888 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		E5279B854C1C6C7005767E7B /* Build configuration list for PBXNativeTarget "writePadUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D3FAA1656424E7A7F9C1CD13 /* Debug */,
+				27FF083DCF20D8E40C707992 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

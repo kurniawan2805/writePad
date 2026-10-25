@@ -4,7 +4,7 @@ import SwiftUI
 /// Lets SwiftUI toolbar buttons reach the underlying `PKCanvasView`.
 @MainActor
 final class CanvasController {
-    fileprivate weak var canvasView: PKCanvasView?
+    weak var canvasView: PKCanvasView?
 
     func undo() { canvasView?.undoManager?.undo() }
     func redo() { canvasView?.undoManager?.redo() }

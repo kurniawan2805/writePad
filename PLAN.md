@@ -111,23 +111,27 @@ Goal: *"I can create a notebook, write on it with Pencil, import a PDF, mark it 
 - [x] Zoom & pan
 
 ### Milestone 3 — Library (week 3–4)
-- [ ] Grid of notebooks with thumbnails, folders, rename, delete, search by title
-- [ ] Create notebook (choose paper), create folder
-- [ ] Sort by date / name
+- [x] Grid of notebooks with thumbnails, folders, rename, delete, search by title
+- [x] Create notebook (choose paper), create folder
+- [x] Sort by date / name
 
 ### Milestone 4 — PDF read & annotate (week 4–6)
-- [ ] Import PDF via `.fileImporter` / Files app / Share sheet ("Open in writePad")
-- [ ] Display with `PDFView` (continuous scroll, thumbnails, outline/TOC, text search)
-- [ ] **Handwriting on PDF**: `PDFPageOverlayViewProvider` gives a `PKCanvasView` per page; store one `PKDrawing` per page
-- [ ] Text highlight / underline / strikethrough via selection → `PDFAnnotation`
-- [ ] **Comments**: sticky note (`PDFAnnotation` subtype `.text`) + a comments side panel listing all notes with jump-to-page
-- [ ] Insert blank page between PDF pages
+- [x] Import PDF via `.fileImporter` / Files app / Share sheet ("Open in writePad")
+- [x] Display with `PDFView` (continuous scroll, thumbnails, outline/TOC, text search)
+- [x] **Handwriting on PDF**: `PDFPageOverlayViewProvider` gives a `PKCanvasView` per page; store one `PKDrawing` per page
+- [x] Text highlight / underline / strikethrough via selection → `PDFAnnotation`
+- [x] **Comments**: sticky note (`PDFAnnotation` subtype `.text`) + a comments side panel listing all notes with jump-to-page
+- [x] Insert blank page between PDF pages
+
+Usage, storage format, simulator results, and remaining Pencil checks: [Milestone 4 QA](docs/MILESTONE4_QA.md).
 
 ### Milestone 5 — Export & polish (week 6–8)
-- [ ] Export notebook / annotated PDF as flattened PDF (render page + drawing into `UIGraphicsPDFRenderer`) and share sheet
-- [ ] Export single page as PNG
-- [ ] Light/dark mode, app icon, empty states, crash-free autosave
+- [x] Export notebook / annotated PDF as flattened PDF (render page + drawing into `UIGraphicsPDFRenderer`) and share sheet
+- [x] Export single page as PNG
+- [x] Light/dark mode, app icon, empty states, crash-free autosave
 - [ ] Test on real iPad: 100+ page PDF, long notebook, low memory
+
+Simulator verification and the remaining device checklist: [Milestone 5 QA](docs/MILESTONE5_QA.md).
 
 ### Out of scope for MVP
 Sync, handwriting search/OCR, shapes, audio, templates marketplace, collaboration, Mac app.

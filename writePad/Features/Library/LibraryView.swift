@@ -1,0 +1,167 @@
+import SwiftUI
+import UniformTypeIdentifiers
+
+struct LibraryView: View {
+    @Bindable var viewModel: LibraryViewModel
+    @State private var form: LibraryItemForm.Request?
+    @State private var notebookToDelete: LibraryNotebook?
+    @State private var folderToDelete: LibraryFolder?
+    @State private var isImportingPDF = false
+
+    var body: some View {
+        NavigationSplitView {
+            List {
+                Button {
+                    viewModel.selectedFolderID = nil
+                } label: {
+                    Label("All Notebooks", systemImage: "books.vertical")
+                }
+                .listRowBackground(viewModel.selectedFolderID == nil ? Color.accentColor.opacity(0.15) : .clear)
+                Section("Folders") {
+                    ForEach(viewModel.folders) { folder in
+                        Button {
+                            viewModel.selectedFolderID = folder.id
+                        } label: {
+                            Label(folder.title, systemImage: "folder")
+                        }
+                        .listRowBackground(viewModel.selectedFolderID == folder.id ? Color.accentColor.opacity(0.15) : .clear)
+                        .contextMenu {
+                            Button("Rename", systemImage: "pencil") { showForm(.renameFolder(folder)) }
+                            Button("Delete Folder", systemImage: "trash", role: .destructive) { folderToDelete = folder }
+                        }
+                    }
+                    Button("New Folder", systemImage: "folder.badge.plus") { showForm(.newFolder) }
+                }
+            }
+            .navigationTitle("writePad")
+        } detail: {
+            NavigationStack {
+                notebookGrid
+                    .navigationTitle(viewModel.title)
+                    .searchable(text: $viewModel.searchText, placement: .navigationBarDrawer(displayMode: .always),
+                                prompt: "Search by title")
+                    .toolbar { libraryToolbar }
+            }
+        }
+        .sheet(item: $form) { LibraryItemForm(request: $0, library: viewModel) }
+        .fileImporter(isPresented: $isImportingPDF, allowedContentTypes: [.pdf], allowsMultipleSelection: false) { result in
+            switch result {
+            case let .success(urls):
+                guard let url = urls.first else { return }
+                perform { try viewModel.importPDF(from: url) }
+            case let .failure(error):
+                viewModel.lastError = error.localizedDescription
+            }
+        }
+        .fullScreenCover(isPresented: Binding(
+            get: { viewModel.editor != nil },
+            set: { if !$0 { perform { try viewModel.closeNotebook() } } }
+        )) {
+            if let editor = viewModel.editor {
+                NotebookEditorView(viewModel: editor) { perform { try viewModel.closeNotebook() } }
+                    .interactiveDismissDisabled()
+            }
+        }
+        .alert("Couldn't update library", isPresented: Binding(
+            get: { viewModel.lastError != nil }, set: { if !$0 { viewModel.lastError = nil } }
+        )) {
+            Button("OK") { viewModel.lastError = nil }
+        } message: {
+            Text(viewModel.lastError ?? "")
+        }
+        .confirmationDialog("Delete notebook?", isPresented: Binding(
+            get: { notebookToDelete != nil }, set: { if !$0 { notebookToDelete = nil } }
+        ), titleVisibility: .visible) {
+            Button("Delete Notebook", role: .destructive) {
+                if let notebook = notebookToDelete { perform { try viewModel.deleteNotebook(notebook) } }
+                notebookToDelete = nil
+            }
+        } message: {
+            Text("The notebook and all its writing will be permanently deleted.")
+        }
+        .confirmationDialog("Delete folder?", isPresented: Binding(
+            get: { folderToDelete != nil }, set: { if !$0 { folderToDelete = nil } }
+        ), titleVisibility: .visible) {
+            Button("Delete Folder", role: .destructive) {
+                if let folder = folderToDelete { perform { try viewModel.deleteFolder(folder) } }
+                folderToDelete = nil
+            }
+        } message: {
+            Text("Its notebooks will remain in All Notebooks.")
+        }
+    }
+
+    private var notebookGrid: some View {
+        ScrollView {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 180, maximum: 240), alignment: .top)], alignment: .leading, spacing: 20) {
+                ForEach(viewModel.visibleNotebooks) { notebook in
+                    Button {
+                        perform { try viewModel.openNotebook(notebook) }
+                    } label: {
+                        NotebookCard(notebook: notebook, thumbnail: viewModel.thumbnails[notebook.id])
+                    }
+                    .buttonStyle(.plain)
+                    .contextMenu { notebookMenu(notebook) }
+                    .task(id: viewModel.thumbnails[notebook.id] == nil) { viewModel.loadThumbnail(for: notebook) }
+                }
+            }
+            .padding(24)
+        }
+        .background(Color(.secondarySystemBackground))
+        .overlay {
+            if viewModel.visibleNotebooks.isEmpty {
+                if viewModel.searchText.isEmpty {
+                    ContentUnavailableView {
+                        Label(viewModel.selectedFolderID == nil ? "No Notebooks" : "This Folder Is Empty",
+                              systemImage: viewModel.selectedFolderID == nil ? "books.vertical" : "folder")
+                    } description: {
+                        Text(viewModel.selectedFolderID == nil
+                             ? "Create a notebook or import a PDF to start writing."
+                             : "Create a notebook here, import a PDF, or move a notebook into this folder.")
+                    } actions: {
+                        Button("New Notebook") { showForm(.newNotebook) }.buttonStyle(.borderedProminent)
+                        Button("Import PDF", systemImage: "square.and.arrow.down") { isImportingPDF = true }
+                    }
+                } else {
+                    ContentUnavailableView.search(text: viewModel.searchText)
+                }
+            }
+        }
+    }
+
+    @ToolbarContentBuilder
+    private var libraryToolbar: some ToolbarContent {
+        ToolbarItemGroup(placement: .topBarTrailing) {
+            Button("Import PDF", systemImage: "square.and.arrow.down") { isImportingPDF = true }
+            Menu("Sort", systemImage: "arrow.up.arrow.down") {
+                Picker("Sort by", selection: $viewModel.sortOrder) {
+                    ForEach(LibraryViewModel.SortOrder.allCases, id: \.self) { order in Text(order.rawValue).tag(order) }
+                }
+            }
+            Menu("Create", systemImage: "plus") {
+                Button("New Notebook", systemImage: "doc.badge.plus") { showForm(.newNotebook) }
+                Button("New Folder", systemImage: "folder.badge.plus") { showForm(.newFolder) }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func notebookMenu(_ notebook: LibraryNotebook) -> some View {
+        Button("Rename", systemImage: "pencil") { showForm(.renameNotebook(notebook)) }
+        Menu("Move to Folder", systemImage: "folder") {
+            Button("No Folder") { perform { try viewModel.moveNotebook(notebook, to: nil) } }
+            ForEach(viewModel.folders) { folder in
+                Button(folder.title) { perform { try viewModel.moveNotebook(notebook, to: folder.id) } }
+            }
+        }
+        Button("Delete Notebook", systemImage: "trash", role: .destructive) { notebookToDelete = notebook }
+    }
+
+    private func showForm(_ action: LibraryItemForm.Action) {
+        form = LibraryItemForm.Request(action: action)
+    }
+
+    private func perform(_ operation: () throws -> Void) {
+        do { try operation() } catch { viewModel.lastError = error.localizedDescription }
+    }
+}

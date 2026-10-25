@@ -1,6 +1,7 @@
 import Foundation
 import PencilKit
 import Testing
+import UIKit
 @testable import writePad
 
 struct NotebookStoreTests {
@@ -37,6 +38,56 @@ struct NotebookStoreTests {
         #expect(loaded.strokes.count == 1)
         #expect(loaded.strokes[0].path.count == drawing.strokes[0].path.count)
         #expect(loaded.bounds == drawing.bounds)
+    }
+
+    @Test @MainActor func importingPDFCopiesSourceAndMapsItsPages() throws {
+        let sourceURL = store.rootURL.appending(path: "Lecture.pdf")
+        let renderer = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 612, height: 792))
+        let pdfData = renderer.pdfData { context in
+            context.beginPage()
+            context.beginPage()
+        }
+        try pdfData.write(to: sourceURL)
+
+        let manifest = try store.importPDF(from: sourceURL, title: "Lecture")
+
+        #expect(manifest.version == NotebookManifest.currentVersion)
+        #expect(manifest.pages.map(\.pdfPageIndex) == [0, 1])
+        #expect(try Data(contentsOf: store.sourcePDFURL(for: manifest.id)) == pdfData)
+        #expect(try store.loadManifest(id: manifest.id).title == manifest.title)
+    }
+
+    @Test func invalidPDFDoesNotLeaveAPackage() throws {
+        let sourceURL = store.rootURL.appending(path: "broken.pdf")
+        try Data("not a PDF".utf8).write(to: sourceURL)
+
+        #expect(throws: NotebookStore.StoreError.invalidPDF) {
+            try store.importPDF(from: sourceURL, title: "Broken")
+        }
+        #expect(try store.listNotebooks().isEmpty)
+    }
+
+    @Test func versionOneManifestWithoutPDFPageIndexStillLoads() throws {
+        let notebookID = UUID()
+        let pageID = UUID()
+        let packageURL = store.packageURL(for: notebookID)
+        try FileManager.default.createDirectory(at: packageURL, withIntermediateDirectories: true)
+        let manifestJSON = """
+        {
+            "createdAt": "2024-01-01T00:00:00.000Z",
+            "id": "\(notebookID.uuidString)",
+            "pages": [{"background": "blank", "id": "\(pageID.uuidString)"}],
+            "title": "Legacy",
+            "updatedAt": "2024-01-01T00:00:00.000Z",
+            "version": 1
+        }
+        """
+        try Data(manifestJSON.utf8).write(to: packageURL.appending(path: "manifest.json"))
+
+        let manifest = try store.loadManifest(id: notebookID)
+
+        #expect(manifest.version == 1)
+        #expect(manifest.pages.first?.pdfPageIndex == nil)
     }
 
     @Test func deletingMissingDrawingIsNoOp() throws {

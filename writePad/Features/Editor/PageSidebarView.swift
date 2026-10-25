@@ -51,7 +51,7 @@ struct PageSidebarView: View {
                 if let index = pendingDeleteIndex { viewModel.deletePage(at: index) }
             }
         } message: {
-            Text("The writing on this page will be permanently deleted.")
+            Text("The writing and annotations on this page will be permanently deleted.")
         }
     }
 
@@ -66,10 +66,12 @@ struct PageSidebarView: View {
             viewModel.movePages(from: [index], to: index + 2)
         }
         .disabled(index == viewModel.pages.count - 1)
-        Menu("Paper", systemImage: "doc.text") {
-            ForEach(PageBackground.allCases, id: \.self) { background in
-                Button(background.title, systemImage: background.systemImage) {
-                    viewModel.setBackground(background, forPageAt: index)
+        if viewModel.pages[index].pdfPageIndex == nil {
+            Menu("Paper", systemImage: "doc.text") {
+                ForEach(PageBackground.allCases, id: \.self) { background in
+                    Button(background.title, systemImage: background.systemImage) {
+                        viewModel.setBackground(background, forPageAt: index)
+                    }
                 }
             }
         }
@@ -80,7 +82,7 @@ struct PageSidebarView: View {
 
     private func requestDelete(at index: Int) {
         guard viewModel.pages.count > 1 else { return }
-        if viewModel.pageHasInk(at: index) {
+        if viewModel.pageHasInk(at: index) || viewModel.pdf?.page(for: viewModel.pages[index].id)?.annotations.isEmpty == false {
             pendingDeleteIndex = index
         } else {
             viewModel.deletePage(at: index)

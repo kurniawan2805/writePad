@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import PDFKit
 import PencilKit
 import UIKit
 
@@ -19,12 +20,14 @@ final class EditorViewModel {
     private(set) var scrollRequest: ScrollRequest?
     private(set) var currentPageIndex = 0
     var allowsFingerDrawing: Bool
+    let pdf: PDFNotebook?
 
     /// Page-local drawings, keyed by page ID. Not observed: it changes on every stroke.
     @ObservationIgnored private var pageDrawings: [UUID: PKDrawing]
     @ObservationIgnored private var dirtyPageIDs: Set<UUID> = []
     @ObservationIgnored private var deletedPageIDs: Set<UUID> = []
     @ObservationIgnored private var isManifestDirty = false
+    @ObservationIgnored private var isPDFDirty = false
     @ObservationIgnored private var pendingSave: Task<Void, Never>?
 
     private let store: NotebookStore
@@ -36,24 +39,35 @@ final class EditorViewModel {
     var pages: [PageInfo] { manifest.pages }
     private var layout: PageLayout { PageLayout(pageCount: pages.count) }
 
-    init(store: NotebookStore, manifest: NotebookManifest) {
+    init(store: NotebookStore, manifest: NotebookManifest) throws {
         self.store = store
         self.manifest = manifest
-        self.pageDrawings = Dictionary(uniqueKeysWithValues: manifest.pages.map { page in
-            (page.id, (try? store.loadDrawing(pageID: page.id, notebookID: manifest.id)) ?? PKDrawing())
+        let sourceURL = store.sourcePDFURL(for: manifest.id)
+        if manifest.pages.contains(where: { $0.pdfPageIndex != nil }), !FileManager.default.fileExists(atPath: sourceURL.path()) {
+            throw NotebookStore.StoreError.invalidPDF
+        }
+        self.pdf = FileManager.default.fileExists(atPath: sourceURL.path())
+            ? try PDFNotebook(url: sourceURL, pages: manifest.pages, markups: store.loadPDFMarkups(notebookID: manifest.id)) : nil
+        self.pageDrawings = try Dictionary(uniqueKeysWithValues: manifest.pages.map { page in
+            (page.id, try store.loadDrawing(pageID: page.id, notebookID: manifest.id))
         })
         #if targetEnvironment(simulator)
         self.allowsFingerDrawing = true // the simulator has no Apple Pencil
         #else
         self.allowsFingerDrawing = false
         #endif
+        pdf?.onChange = { [weak self] id in
+            self?.isPDFDirty = true
+            self?.refreshThumbnail(for: id)
+            self?.scheduleSave()
+        }
         for page in manifest.pages { refreshThumbnail(for: page.id) }
     }
 
     /// Opens the most recently edited notebook, or creates the first one.
     static func openDefault(store: NotebookStore = NotebookStore()) throws -> EditorViewModel {
         let manifest = try store.listNotebooks().first ?? store.createNotebook(title: "My Notebook")
-        return EditorViewModel(store: store, manifest: manifest)
+        return try EditorViewModel(store: store, manifest: manifest)
     }
 
     // MARK: Ink
@@ -66,11 +80,30 @@ final class EditorViewModel {
         layout.merge(pages.map { drawing(forPage: $0.id) })
     }
 
+    func export(as format: NotebookExportFormat, directory: URL = .temporaryDirectory) async throws -> URL {
+        let snapshot = NotebookExport(
+            manifest: manifest,
+            drawings: pageDrawings.mapValues { $0.dataRepresentation() },
+            sourcePDFURL: store.sourcePDFURL(for: manifest.id),
+            markups: pdf?.markups ?? []
+        )
+        return try await Task.detached(priority: .userInitiated) {
+            try NotebookExporter.export(snapshot, as: format, directory: directory)
+        }.value
+    }
+
     func drawingDidChange(_ combined: PKDrawing) {
         for (page, newDrawing) in zip(pages, layout.split(combined)) where newDrawing != pageDrawings[page.id] {
             pageDrawings[page.id] = newDrawing
             dirtyPageIDs.insert(page.id)
         }
+        scheduleSave()
+    }
+
+    func drawingDidChange(_ drawing: PKDrawing, pageID: UUID) {
+        guard pages.contains(where: { $0.id == pageID }), drawing != pageDrawings[pageID] else { return }
+        pageDrawings[pageID] = drawing
+        dirtyPageIDs.insert(pageID)
         scheduleSave()
     }
 
@@ -123,17 +156,18 @@ final class EditorViewModel {
     func setBackground(_ background: PageBackground, forPageAt index: Int) {
         guard pages.indices.contains(index), pages[index].background != background else { return }
         manifest.pages[index].background = background
-        refreshThumbnail(for: pages[index].id)
         structureDidChange()
+        refreshThumbnail(for: pages[index].id)
     }
 
     func applyBackgroundToAllPages(_ background: PageBackground) {
         for index in pages.indices { manifest.pages[index].background = background }
-        for page in pages { refreshThumbnail(for: page.id) }
         structureDidChange()
+        for page in pages { refreshThumbnail(for: page.id) }
     }
 
     private func structureDidChange() {
+        pdf?.rebuild(pages: pages)
         structureVersion += 1
         isManifestDirty = true
         scheduleSave()
@@ -153,20 +187,27 @@ final class EditorViewModel {
     func saveNow() {
         pendingSave?.cancel()
         pendingSave = nil
-        guard !dirtyPageIDs.isEmpty || !deletedPageIDs.isEmpty || isManifestDirty else { return }
+        guard !dirtyPageIDs.isEmpty || !deletedPageIDs.isEmpty || isManifestDirty || isPDFDirty else { return }
+        // Keep a failed manifest write retryable even after drawing files have been saved.
+        isManifestDirty = true
         do {
             for id in dirtyPageIDs {
                 try store.saveDrawing(drawing(forPage: id), pageID: id, notebookID: manifest.id)
                 refreshThumbnail(for: id)
             }
             dirtyPageIDs.removeAll()
+            if isPDFDirty, let pdf {
+                try store.savePDFMarkups(pdf.markups, notebookID: manifest.id)
+                isPDFDirty = false
+            }
+            manifest.version = NotebookManifest.currentVersion
+            manifest.updatedAt = .now
+            try store.saveManifest(manifest)
+            isManifestDirty = false
             for id in deletedPageIDs {
                 try store.deleteDrawing(pageID: id, notebookID: manifest.id)
             }
             deletedPageIDs.removeAll()
-            manifest.updatedAt = .now
-            try store.saveManifest(manifest)
-            isManifestDirty = false
             lastError = nil
         } catch {
             lastError = error.localizedDescription
@@ -175,6 +216,17 @@ final class EditorViewModel {
 
     private func refreshThumbnail(for id: UUID) {
         guard let page = pages.first(where: { $0.id == id }) else { return }
+        if let pdfPage = pdf?.page(for: id) {
+            let size = PDFPageCanvas.displaySize(for: pdfPage)
+            let target = CGSize(width: Self.thumbnailWidth, height: Self.thumbnailWidth * size.height / size.width)
+            let image = pdfPage.thumbnail(of: target, for: .cropBox)
+            thumbnails[id] = UIGraphicsImageRenderer(size: target).image { _ in
+                image.draw(in: CGRect(origin: .zero, size: target))
+                drawing(forPage: id).image(from: CGRect(origin: .zero, size: size), scale: target.width / size.width)
+                    .draw(in: CGRect(origin: .zero, size: target))
+            }
+            return
+        }
         thumbnails[id] = PageBackgroundRenderer.thumbnail(
             background: page.background, drawing: drawing(forPage: id), width: Self.thumbnailWidth
         )

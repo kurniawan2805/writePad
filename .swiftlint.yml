@@ -1,6 +1,7 @@
 included:
   - writePad
   - writePadTests
+  - writePadUITests
 disabled_rules:
   - trailing_comma
 line_length:

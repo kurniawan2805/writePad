@@ -35,6 +35,20 @@
                ReferencedContainer = "container:writePad.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "NO"
+            buildForProfiling = "NO"
+            buildForArchiving = "NO"
+            buildForAnalyzing = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "8F2E8A245D14BDE3CAAFB62B"
+               BuildableName = "writePadUITests.xctest"
+               BlueprintName = "writePadUITests"
+               ReferencedContainer = "container:writePad.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction
@@ -61,6 +75,17 @@
                BlueprintIdentifier = "6BE7742F93B403EC11FF3826"
                BuildableName = "writePadTests.xctest"
                BlueprintName = "writePadTests"
+               ReferencedContainer = "container:writePad.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "8F2E8A245D14BDE3CAAFB62B"
+               BuildableName = "writePadUITests.xctest"
+               BlueprintName = "writePadUITests"
                ReferencedContainer = "container:writePad.xcodeproj">
             </BuildableReference>
          </TestableReference>

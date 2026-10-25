@@ -90,4 +90,21 @@ struct EditorViewModelTests {
         editor.addPage()
         #expect(editor.pages.allSatisfy { editor.thumbnails[$0.id] != nil })
     }
+
+    @Test func failedManifestSaveCanBeRetriedAfterDrawingWasWritten() throws {
+        let editor = try EditorViewModel.openDefault(store: store)
+        let manifestURL = store.packageURL(for: editor.manifest.id).appending(path: "manifest.json")
+        try FileManager.default.removeItem(at: manifestURL)
+        try FileManager.default.createDirectory(at: manifestURL, withIntermediateDirectories: false)
+        editor.drawingDidChange(NotebookStoreTests.sampleDrawing())
+        editor.saveNow()
+        #expect(editor.lastError != nil)
+
+        try FileManager.default.removeItem(at: manifestURL)
+        editor.saveNow()
+
+        #expect(editor.lastError == nil)
+        #expect(try store.loadManifest(id: editor.manifest.id).id == editor.manifest.id)
+        #expect(try store.loadDrawing(pageID: editor.pages[0].id, notebookID: editor.manifest.id).strokes.count == 1)
+    }
 }
