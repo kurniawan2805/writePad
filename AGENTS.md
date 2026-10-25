@@ -77,6 +77,7 @@ TestSupport/                shared by both test targets (e.g. PDFFixture builds 
 - Simulator has no Apple Pencil: finger drawing defaults on in the simulator, off on device. Pressure, palm rejection and latency must be checked on a real iPad — say so when you couldn't.
 
 ## Workflow
+- Work items live in `docs/TASKS.md` with a difficulty (S/M/L). Claim one by setting its Status in your first commit; leave **L** tasks to the strongest model unless a design note in that file says otherwise.
 - Add or update tests in `writePadTests/` for storage and view-model logic; run the test command above before calling work done and report real results.
 - One milestone item per commit where practical; commit messages in imperative mood with a short bullet body.
 - Don't commit `build/`, `DerivedData/`, or `xcuserdata/` (already in `.gitignore`).
