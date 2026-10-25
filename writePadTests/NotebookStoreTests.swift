@@ -109,7 +109,7 @@ struct NotebookStoreTests {
         loaded.pages[0].background = .cornell
         try store.saveManifest(loaded)
         let reopened = try store.loadManifest(id: original.id)
-        #expect(reopened.version == 4)
+        #expect(reopened.version == NotebookManifest.currentVersion)
         #expect(reopened.pages[0].background == .cornell)
     }
 

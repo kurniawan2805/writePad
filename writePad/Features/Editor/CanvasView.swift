@@ -38,11 +38,16 @@ struct CanvasView: UIViewRepresentable {
     func updateUIView(_ canvas: NotebookCanvasView, context: Context) {
         canvas.drawingPolicy = viewModel.allowsFingerDrawing ? .anyInput : .pencilOnly
         // Read-only notebooks still scroll and zoom; they just can't be drawn on.
-        canvas.drawingGestureRecognizer.isEnabled = !viewModel.isReadOnly
+        canvas.drawingGestureRecognizer.isEnabled = !viewModel.isReadOnly && !viewModel.isEditingItems
         let coordinator = context.coordinator
         if coordinator.structureVersion != viewModel.structureVersion {
             coordinator.reload(canvas)
         }
+        canvas.itemsOverlay.configure(viewModel: viewModel, pages: viewModel.pages.enumerated().map {
+            ($0.element.id, canvas.layout.frame(ofPage: $0.offset))
+        })
+        context.coordinator.toolPicker.setVisible(!viewModel.isReadOnly && !viewModel.isEditingItems, forFirstResponder: canvas)
+        if !viewModel.isReadOnly, !viewModel.isEditingItems, canvas.window != nil { canvas.becomeFirstResponder() }
         if let request = viewModel.scrollRequest, request.id != coordinator.handledScrollRequestID {
             coordinator.handledScrollRequestID = request.id
             canvas.scrollToPage(request.pageIndex, animated: true)
@@ -98,6 +103,7 @@ struct CanvasView: UIViewRepresentable {
 /// A `PKCanvasView` showing pages stacked vertically, with paper drawn behind the ink.
 final class NotebookCanvasView: PKCanvasView {
     private let pagesView = PagesBackgroundView()
+    let itemsOverlay = PageItemsOverlay()
     private(set) var layout = PageLayout(pageCount: 1)
     private var fittedWidth: CGFloat = 0
     private var isFitToWidth = true
@@ -119,11 +125,22 @@ final class NotebookCanvasView: PKCanvasView {
         alwaysBounceVertical = true
         pagesView.layer.anchorPoint = .zero
         insertSubview(pagesView, at: 0)
+        itemsOverlay.layer.anchorPoint = .zero
+        addSubview(itemsOverlay)
     }
 
     @available(*, unavailable)
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+
+    // PencilKit exposes its own accessibility container instead of custom subviews.
+    override var accessibilityElements: [Any]? {
+        get {
+            let ink = super.accessibilityElements ?? subviews.filter { $0 !== itemsOverlay }
+            return ink + itemsOverlay.subviews
+        }
+        set { super.accessibilityElements = newValue }
     }
 
     func setPages(_ backgrounds: [PageBackground]) {
@@ -155,6 +172,10 @@ final class NotebookCanvasView: PKCanvasView {
         pagesView.bounds = CGRect(origin: .zero, size: layout.contentSize)
         pagesView.center = .zero
         pagesView.transform = CGAffineTransform(scaleX: zoomScale, y: zoomScale)
+        itemsOverlay.bounds = CGRect(origin: .zero, size: layout.contentSize)
+        itemsOverlay.center = .zero
+        itemsOverlay.transform = CGAffineTransform(scaleX: zoomScale, y: zoomScale)
+        bringSubviewToFront(itemsOverlay)
         // Center the pages horizontally when zoomed out narrower than the screen.
         let inset = max(0, (bounds.width - size.width) / 2)
         if contentInset.left != inset {

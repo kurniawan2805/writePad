@@ -10,7 +10,10 @@ struct PDFCanvasView: UIViewRepresentable {
     func makeCoordinator() -> Coordinator { Coordinator(viewModel: viewModel, pdf: pdf, controller: controller) }
 
     func makeUIView(context: Context) -> PDFView {
-        let view = PDFView()
+        let view = ItemPDFView()
+        view.itemElements = { [weak coordinator = context.coordinator] in
+            coordinator?.overlays.values.flatMap { $0.itemsOverlay.subviews } ?? []
+        }
         view.accessibilityIdentifier = "PDF Reader"
         view.displayMode = .singlePageContinuous
         view.displayDirection = .vertical
@@ -27,7 +30,7 @@ struct PDFCanvasView: UIViewRepresentable {
     }
 
     func updateUIView(_ view: PDFView, context: Context) {
-        view.isInMarkupMode = pdf.isDrawing
+        view.isInMarkupMode = pdf.isDrawing || viewModel.isEditingItems
         let coordinator = context.coordinator
         if coordinator.structureVersion != viewModel.structureVersion {
             coordinator.clearOverlays()
@@ -36,11 +39,12 @@ struct PDFCanvasView: UIViewRepresentable {
             coordinator.scrollRequestID = nil
             coordinator.structureVersion = viewModel.structureVersion
         }
-        for overlay in coordinator.overlays.values {
-            overlay.canvas.isUserInteractionEnabled = pdf.isDrawing && !viewModel.isReadOnly
+        for (id, overlay) in coordinator.overlays {
+            overlay.itemsOverlay.configure(viewModel: viewModel, pages: [(id, CGRect(origin: .zero, size: viewModel.pageSize(for: id)))])
+            overlay.canvas.isUserInteractionEnabled = pdf.isDrawing && !viewModel.isReadOnly && !viewModel.isEditingItems
             overlay.canvas.drawingPolicy = viewModel.allowsFingerDrawing ? .anyInput : .pencilOnly
         }
-        if pdf.isDrawing {
+        if pdf.isDrawing && !viewModel.isEditingItems {
             coordinator.activateCurrentCanvas()
         } else {
             coordinator.hidePicker()
@@ -87,19 +91,20 @@ struct PDFCanvasView: UIViewRepresentable {
             let overlay = PDFPageCanvas(size: PDFPageCanvas.displaySize(for: page))
             overlay.canvas.drawing = viewModel.drawing(forPage: id)
             overlay.canvas.delegate = self
-            overlay.canvas.isUserInteractionEnabled = pdf.isDrawing && !viewModel.isReadOnly
+            overlay.canvas.isUserInteractionEnabled = pdf.isDrawing && !viewModel.isReadOnly && !viewModel.isEditingItems
             overlay.canvas.drawingPolicy = viewModel.allowsFingerDrawing ? .anyInput : .pencilOnly
             overlay.canvas.accessibilityIdentifier = "PDF Ink Page \((pdf.pages.firstIndex { $0.id == id } ?? 0) + 1)"
             picker.addObserver(overlay.canvas)
             overlay.snapper = ShapeSnapper(canvas: overlay.canvas) { [viewModel] in
                 ShapeSnapper.isEnabledInSettings && !viewModel.isReadOnly
             }
+            overlay.itemsOverlay.configure(viewModel: viewModel, pages: [(id, CGRect(origin: .zero, size: viewModel.pageSize(for: id)))])
             overlays[id] = overlay
             return overlay
         }
 
         func pdfView(_ pdfView: PDFView, willDisplayOverlayView overlayView: UIView, for page: PDFPage) {
-            if pdf.isDrawing { activateCurrentCanvas() }
+            if pdf.isDrawing && !viewModel.isEditingItems { activateCurrentCanvas() }
         }
 
         func pdfView(_ pdfView: PDFView, willEndDisplayingOverlayView overlayView: UIView, for page: PDFPage) {
@@ -126,7 +131,7 @@ struct PDFCanvasView: UIViewRepresentable {
             let index = pdf.document.index(for: page)
             guard viewModel.pages.indices.contains(index) else { return }
             viewModel.pageDidBecomeVisible(index)
-            if pdf.isDrawing { activateCurrentCanvas() }
+            if pdf.isDrawing && !viewModel.isEditingItems { activateCurrentCanvas() }
         }
 
         func activateCurrentCanvas() {
@@ -157,6 +162,7 @@ struct PDFCanvasView: UIViewRepresentable {
 
 final class PDFPageCanvas: UIView {
     let canvas = PKCanvasView()
+    let itemsOverlay = PageItemsOverlay()
     var snapper: ShapeSnapper?
     private let pageSize: CGSize
 
@@ -173,6 +179,7 @@ final class PDFPageCanvas: UIView {
         canvas.contentSize = size
         canvas.pinchGestureRecognizer?.isEnabled = false
         addSubview(canvas)
+        addSubview(itemsOverlay)
     }
 
     @available(*, unavailable)
@@ -185,9 +192,14 @@ final class PDFPageCanvas: UIView {
         canvas.bounds = CGRect(origin: .zero, size: pageSize)
         canvas.center = CGPoint(x: bounds.midX, y: bounds.midY)
         canvas.transform = CGAffineTransform(scaleX: bounds.width / pageSize.width, y: bounds.height / pageSize.height)
+        itemsOverlay.transform = .identity
+        itemsOverlay.bounds = CGRect(origin: .zero, size: pageSize)
+        itemsOverlay.center = CGPoint(x: bounds.midX, y: bounds.midY)
+        itemsOverlay.transform = canvas.transform
     }
 
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+        if let hit = itemsOverlay.hitTest(convert(point, to: itemsOverlay), with: event) { return hit }
         guard canvas.isUserInteractionEnabled else { return nil }
         return super.hitTest(point, with: event)
     }
@@ -195,5 +207,15 @@ final class PDFPageCanvas: UIView {
     nonisolated static func displaySize(for page: PDFPage) -> CGSize {
         let size = page.bounds(for: .cropBox).size
         return page.rotation % 180 == 0 ? size : CGSize(width: size.height, height: size.width)
+    }
+}
+
+private final class ItemPDFView: PDFView {
+    var itemElements: (() -> [UIView])?
+
+    // PDFKit page accessibility omits provider overlays.
+    override var accessibilityElements: [Any]? {
+        get { (super.accessibilityElements ?? subviews) + (itemElements?() ?? []) }
+        set { super.accessibilityElements = newValue }
     }
 }

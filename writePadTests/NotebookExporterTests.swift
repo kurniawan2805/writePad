@@ -244,3 +244,52 @@ struct NotebookExporterTests {
 
     private func isDark(_ pixel: [UInt8]) -> Bool { pixel.prefix(3).allSatisfy { $0 < 80 } }
 }
+
+extension NotebookExporterTests {
+    @Test(arguments: [0, 90, 180, 270])
+    func pageItemsRenderOverRotatedPDFWithoutChangingSource(rotation: Int) async throws {
+        let sourceURL = store.rootURL.appending(path: "items.pdf")
+        let source = try #require(makeSourcePDF(rotation: rotation).dataRepresentation())
+        try source.write(to: sourceURL)
+        let manifest = try store.importPDF(from: sourceURL, title: "PDF Items")
+        let editor = try EditorViewModel(store: store, manifest: manifest)
+        try await checkItemsRender(editor)
+        #expect(try Data(contentsOf: store.sourcePDFURL(for: manifest.id)) == source)
+    }
+
+    @Test func pageItemsRenderInPaperExportsAndBothThumbnails() async throws {
+        try await checkItemsRender(EditorViewModel.openDefault(store: store))
+    }
+
+    private func checkItemsRender(_ editor: EditorViewModel) async throws {
+        let id = editor.pages[0].id
+        editor.addText("Hello page items", to: id)
+        let asset = UIGraphicsImageRenderer(size: CGSize(width: 60, height: 30)).pngData { context in
+            UIColor.magenta.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: 60, height: 30))
+        }
+        try editor.addImage(asset, to: id)
+        var imageItem = try #require(editor.selectedItem)
+        imageItem.frame = CGRect(x: 20, y: 20, width: 60, height: 30)
+        editor.updateItem(imageItem, on: id)
+        let pngURL = try await editor.export(as: .png(pageID: id), directory: store.rootURL)
+        let pdfURL = try await editor.export(as: .pdf, directory: store.rootURL)
+        let output = try #require(PDFDocument(url: pdfURL))
+        let page = try #require(output.page(at: 0))
+        editor.saveNow()
+        #expect(editor.lastError == nil)
+        await editor.waitForThumbnails()
+        let library = try #require(await PageThumbnailJob.libraryImage(store: store, notebookID: editor.manifest.id))
+        let images = [try #require(UIImage(contentsOfFile: pngURL.path)),
+                      page.thumbnail(of: editor.pageSize(for: id), for: .mediaBox),
+                      try #require(editor.thumbnails[id]), library]
+        for image in images {
+            let scale = CGFloat(try #require(image.cgImage).width) / editor.pageSize(for: id).width
+            let color = pixel(image, x: Int(40 * scale), y: Int(35 * scale))
+            #expect(color[0] > 220 && color[1] < 50 && color[2] > 220)
+        }
+        #expect(page.string?.components(separatedBy: .whitespacesAndNewlines)
+            .filter { !$0.isEmpty }.joined(separator: " ").contains("Hello page items") == true)
+    }
+
+}

@@ -1,11 +1,14 @@
 name: writePad
 options:
   bundleIdPrefix: com.adi
+  xcodeVersion: "27.1"
   deploymentTarget:
     iOS: "18.0"
   createIntermediateGroups: true
 settings:
   base:
+    ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: YES
+    STRING_CATALOG_GENERATE_SYMBOLS: YES
     SWIFT_VERSION: "6.0"
     MARKETING_VERSION: "0.1.0"
     CURRENT_PROJECT_VERSION: "1"
@@ -60,6 +63,7 @@ targets:
       - target: writePad
     settings:
       base:
+        DEVELOPMENT_TEAM: 4Z3W73HN5K
         GENERATE_INFOPLIST_FILE: YES
         TARGETED_DEVICE_FAMILY: "2"
   writePadUITests:
@@ -72,6 +76,8 @@ targets:
       - target: writePad
     settings:
       base:
+        "CODE_SIGN_IDENTITY[sdk=macosx*]": "Apple Development"
+        DEVELOPMENT_TEAM: 4Z3W73HN5K
         GENERATE_INFOPLIST_FILE: YES
         TARGETED_DEVICE_FAMILY: "2"
 schemes:

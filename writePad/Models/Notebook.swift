@@ -4,7 +4,7 @@ import Foundation
 ///
 /// Keys this build doesn't know (written by a newer build) are kept in `unknownFields` and written back unchanged.
 struct NotebookManifest: Codable, Equatable, Identifiable, Sendable {
-    static let currentVersion = 4
+    static let currentVersion = 5
 
     var id: UUID
     var title: String
@@ -58,10 +58,11 @@ struct PageInfo: Codable, Equatable, Identifiable, Sendable {
     var background: PageBackground
     var pdfPageIndex: Int?
     var isBookmarked: Bool
+    var itemsRevision: UUID?
     var unknownFields: [String: JSONValue] = [:]
 
     private enum CodingKeys: String, CodingKey, CaseIterable {
-        case id, background, pdfPageIndex, isBookmarked
+        case id, background, pdfPageIndex, isBookmarked, itemsRevision
     }
 
     init(id: UUID = UUID(), background: PageBackground = .blank, pdfPageIndex: Int? = nil, isBookmarked: Bool = false) {
@@ -76,6 +77,7 @@ struct PageInfo: Codable, Equatable, Identifiable, Sendable {
         id = try container.decode(UUID.self, forKey: .id)
         background = try container.decode(PageBackground.self, forKey: .background)
         pdfPageIndex = try container.decodeIfPresent(Int.self, forKey: .pdfPageIndex)
+        itemsRevision = try container.decodeIfPresent(UUID.self, forKey: .itemsRevision)
         isBookmarked = try container.decodeIfPresent(Bool.self, forKey: .isBookmarked) ?? false
         unknownFields = try UnknownFields.decode(from: decoder, known: CodingKeys.allCases.map(\.rawValue))
     }
@@ -87,6 +89,7 @@ struct PageInfo: Codable, Equatable, Identifiable, Sendable {
         try container.encode(background, forKey: .background)
         try container.encodeIfPresent(pdfPageIndex, forKey: .pdfPageIndex)
         try container.encode(isBookmarked, forKey: .isBookmarked)
+        try container.encodeIfPresent(itemsRevision, forKey: .itemsRevision)
     }
 }
 

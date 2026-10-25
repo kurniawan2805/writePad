@@ -7,6 +7,8 @@ struct NotebookExport: Sendable {
     let drawings: [UUID: Data]
     let sourcePDFURL: URL
     var markups: [PDFMarkup] = []
+    var pageItems: [UUID: [PageItem]] = [:]
+    var imageAssets: [UUID: Data] = [:]
 }
 
 enum NotebookExportFormat: Sendable {
@@ -162,5 +164,6 @@ enum NotebookExporter {
                 drawing.image(from: rect, scale: min(2, 4096 / max(size.width, size.height))).draw(in: rect)
             }
         }
+        PageItemRenderer.draw(snapshot.pageItems[page.id] ?? [], assets: snapshot.imageAssets, in: context)
     }
 }

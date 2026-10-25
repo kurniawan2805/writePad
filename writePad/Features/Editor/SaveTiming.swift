@@ -21,3 +21,9 @@ struct SaveTiming: Sendable, Equatable {
         min(retryBase * (1 << min(max(failures - 1, 0), 6)), retryCap)
     }
 }
+
+struct EditorPendingChanges {
+    var pages: Set<UUID> = []
+    var deleted: Set<UUID> = []
+    var markups = false
+}

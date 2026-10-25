@@ -172,6 +172,8 @@ struct NotebookStore: Sendable {
         /// nil when the annotations didn't change.
         var markups: [PDFMarkup]?
         var deletedPageIDs: Set<UUID> = []
+        var pageItems: [UUID: [PageItem]] = [:]
+        var imageAssets: [UUID: Data] = [:]
     }
 
     /// Writes one save in the order that keeps a crash recoverable: ink, annotations, manifest, then removed pages.
@@ -180,6 +182,7 @@ struct NotebookStore: Sendable {
     func write(_ snapshot: SaveSnapshot) throws -> NotebookManifest {
         let notebookID = snapshot.manifest.id
         try ensureWritable(notebookID)
+        try writePageItems(snapshot)
         for (pageID, drawing) in snapshot.drawings {
             try saveDrawing(drawing, pageID: pageID, notebookID: notebookID)
         }
@@ -362,7 +365,7 @@ extension NotebookStore {
         }.sorted { $0.written < $1.written }
         // New pages take the paper of the one before them, as pages added in the editor do.
         let paper = manifest.pages.last { $0.pdfPageIndex == nil }?.background ?? .blank
-        manifest.pages += orphans.map { PageInfo(id: $0.id, background: paper) }
+        manifest.pages += orphans.map { recoveredPage(id: $0.id, background: paper, files: files) }
         return orphans.count
     }
 

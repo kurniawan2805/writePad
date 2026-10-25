@@ -12,6 +12,8 @@ struct PageThumbnailJob: Sendable {
     let pdfPageIndex: Int?
     let drawing: PKDrawing
     let markups: [PDFMarkup]
+    var items: [PageItem] = []
+    var imageAssets: [UUID: Data] = [:]
 
     /// UIKit/PencilKit rendering can block; keep it off Swift's cooperative executor so saves can still resume.
     static func images(for jobs: [Self], sourceURL: URL, width: CGFloat) -> AsyncStream<(Self, UIImage)> {
@@ -59,8 +61,11 @@ struct PageThumbnailJob: Sendable {
         let markups = try store.loadPDFMarkups(notebookID: notebookID).filter { $0.pageID == page.id }
         let document = page.pdfPageIndex == nil ? nil : PDFDocument(url: store.sourcePDFURL(for: notebookID))
         if let index = page.pdfPageIndex, document?.page(at: index) == nil { throw NotebookStore.StoreError.invalidPDF }
-        let job = Self(id: page.id, version: 0, background: page.background, pdfPageIndex: page.pdfPageIndex,
-                       drawing: drawing, markups: markups)
+        var job = Self(id: page.id, version: 0, background: page.background, pdfPageIndex: page.pdfPageIndex,
+                       drawing: drawing, markups: markups, items: try store.loadItems(page: page, notebookID: notebookID))
+        for item in job.items {
+            if case let .image(id) = item.content { job.imageAssets[id] = try store.loadImage(assetID: id, notebookID: notebookID) }
+        }
         let image = autoreleasepool { job.render(document: document, width: 180) }
         // Never publish an older render as fresh after a concurrent save. Newer formats remain untouched.
         if !manifest.isNewerThanSupported, let data = image.pngData(),
@@ -84,9 +89,20 @@ struct PageThumbnailJob: Sendable {
         withExtendedLifetime(document) {
             if let pdfPageIndex, let page = document?.page(at: pdfPageIndex) {
                 for markup in markups { page.addAnnotation(markup.annotation()) }
-                return PageBackgroundRenderer.thumbnail(pdfPage: page, drawing: drawing, width: width)
+                let base = PageBackgroundRenderer.thumbnail(pdfPage: page, drawing: drawing, width: width)
+                return withItems(on: base, size: PDFPageCanvas.displaySize(for: page))
             }
-            return PageBackgroundRenderer.thumbnail(background: background, drawing: drawing, width: width)
+            let base = PageBackgroundRenderer.thumbnail(background: background, drawing: drawing, width: width)
+            return withItems(on: base, size: PageLayout.pageSize)
+        }
+    }
+
+    private func withItems(on base: UIImage, size: CGSize) -> UIImage {
+        guard !items.isEmpty else { return base }
+        return UIGraphicsImageRenderer(size: base.size).image { renderer in
+            base.draw(in: CGRect(origin: .zero, size: base.size))
+            renderer.cgContext.scaleBy(x: base.size.width / size.width, y: base.size.height / size.height)
+            PageItemRenderer.draw(items, assets: imageAssets, in: renderer.cgContext)
         }
     }
 }

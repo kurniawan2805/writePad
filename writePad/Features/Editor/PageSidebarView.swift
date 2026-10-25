@@ -91,7 +91,7 @@ struct PageSidebarView: View {
                 }
             }
         } message: {
-            Text("The writing and annotations on this page will be permanently deleted.")
+            Text("The writing, items and annotations on this page will be permanently deleted.")
         }
     }
 
@@ -125,7 +125,7 @@ struct PageSidebarView: View {
 
     private func requestDelete(at index: Int) {
         guard viewModel.pages.count > 1 else { return }
-        if viewModel.pageHasInk(at: index) || viewModel.pdf?.page(for: viewModel.pages[index].id)?.annotations.isEmpty == false {
+        if viewModel.pageHasContent(at: index) || viewModel.pdf?.page(for: viewModel.pages[index].id)?.annotations.isEmpty == false {
             pendingDeleteIndex = index
         } else {
             viewModel.deletePage(at: index)

@@ -44,9 +44,13 @@ struct NotebookEditorView: View {
                 Button("Library", systemImage: "books.vertical", action: onClose)
             }
             if !viewModel.isReadOnly {
-                Button("Undo", systemImage: "arrow.uturn.backward") { canvasController.undo() }
+                Button("Undo", systemImage: "arrow.uturn.backward") {
+                    if viewModel.isEditingItems { viewModel.itemUndoManager.undo() } else { canvasController.undo() }
+                }
                     .keyboardShortcut("z", modifiers: .command)
-                Button("Redo", systemImage: "arrow.uturn.forward") { canvasController.redo() }
+                Button("Redo", systemImage: "arrow.uturn.forward") {
+                    if viewModel.isEditingItems { viewModel.itemUndoManager.redo() } else { canvasController.redo() }
+                }
                     .keyboardShortcut("z", modifiers: [.command, .shift])
             }
         }
@@ -71,6 +75,7 @@ struct NotebookEditorView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             } else {
+                PageItemTools(viewModel: viewModel)
                 if viewModel.pages[viewModel.currentPageIndex].pdfPageIndex == nil { paperMenu }
                 Button("Add Page", systemImage: "doc.badge.plus") {
                     viewModel.addPage(after: viewModel.currentPageIndex)

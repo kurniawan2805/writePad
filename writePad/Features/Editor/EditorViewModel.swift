@@ -22,6 +22,11 @@ final class EditorViewModel {
     private(set) var scrollRequest: ScrollRequest?
     private(set) var currentPageIndex = 0
     var allowsFingerDrawing: Bool
+    var isEditingItems = false
+    var selectedItemID: UUID?
+    private(set) var pageItems: [UUID: [PageItem]] = [:]
+    private(set) var imageAssets: [UUID: Data] = [:]
+    let itemUndoManager = UndoManager()
     let pdf: PDFNotebook?
     /// True when a newer build saved this notebook: it is shown, but nothing in it changes and nothing is written.
     let isReadOnly: Bool
@@ -43,20 +48,14 @@ final class EditorViewModel {
     @ObservationIgnored private let writeQueue = DispatchQueue(label: "writePad.notebook-save", qos: .utility)
     @ObservationIgnored private var isWriting = false
     /// What the running background write carries, so a flush can include it.
-    @ObservationIgnored private var inFlight = PendingChanges()
+    @ObservationIgnored private var inFlight = EditorPendingChanges()
     @ObservationIgnored private var saveSequence = 0
     /// The last save started by `saveNow`; background writes before it were rewritten by it.
     @ObservationIgnored private var flushedThrough = 0
     @ObservationIgnored private var thumbnailVersions: [UUID: Int] = [:]
     @ObservationIgnored private var thumbnailTasks: [UUID: Task<Void, Never>] = [:]
 
-    private struct PendingChanges {
-        var pages: Set<UUID> = []
-        var deleted: Set<UUID> = []
-        var markups = false
-    }
-
-    private let store: NotebookStore
+    let store: NotebookStore
 
     static let thumbnailWidth: CGFloat = 140
 
@@ -77,18 +76,30 @@ final class EditorViewModel {
             ? try PDFNotebook(url: sourceURL, pages: manifest.pages, markups: store.loadPDFMarkups(notebookID: manifest.id)) : nil
         var notices = notices
         var drawings: [UUID: PKDrawing] = [:]
+        var loadedItems: [UUID: [PageItem]] = [:]
+        var loadedAssets: [UUID: Data] = [:]
         for page in manifest.pages {
             let load = try store.loadDrawingReport(pageID: page.id, notebookID: manifest.id)
             drawings[page.id] = load.drawing
+            let items = try store.loadItems(page: page, notebookID: manifest.id)
+            loadedItems[page.id] = items
+            for item in items {
+                if case let .image(id) = item.content, loadedAssets[id] == nil {
+                    loadedAssets[id] = try store.loadImage(assetID: id, notebookID: manifest.id)
+                }
+            }
             notices += load.notices
         }
         self.pageDrawings = drawings
+        self.pageItems = loadedItems
+        self.imageAssets = loadedAssets
         self.recoveryNotice = notices.isEmpty ? nil : notices.joined(separator: " ")
         #if targetEnvironment(simulator)
         self.allowsFingerDrawing = true // the simulator has no Apple Pencil
         #else
         self.allowsFingerDrawing = false
         #endif
+        itemUndoManager.groupsByEvent = false
         // Older packages may still hold annotations of pages deleted before pruning existed.
         if pdf?.pruneOrphanedMarkups() == true, !isReadOnly { isPDFDirty = true }
         pdf?.onChange = { [weak self] id in
@@ -103,16 +114,6 @@ final class EditorViewModel {
         }
     }
 
-    /// Opens the most recently edited notebook, or creates the first one.
-    static func openDefault(store: NotebookStore = NotebookStore()) throws -> EditorViewModel {
-        guard let latest = try store.listNotebooks().first else {
-            return try EditorViewModel(store: store, manifest: store.createNotebook(title: "My Notebook"))
-        }
-        let load = try store.loadManifestReport(id: latest.id)
-        return try EditorViewModel(store: store, manifest: load.manifest, notices: load.notices,
-                                   needsSave: load.needsSave, readOnly: load.isReadOnly)
-    }
-
     func dismissRecoveryNotice() { recoveryNotice = nil }
 
     // MARK: Ink
@@ -121,18 +122,6 @@ final class EditorViewModel {
 
     func combinedDrawing() -> PKDrawing {
         layout.merge(pages.map { drawing(forPage: $0.id) })
-    }
-
-    func export(as format: NotebookExportFormat, directory: URL = .temporaryDirectory) async throws -> URL {
-        let snapshot = NotebookExport(
-            manifest: manifest,
-            drawings: pageDrawings.mapValues { $0.dataRepresentation() },
-            sourcePDFURL: store.sourcePDFURL(for: manifest.id),
-            markups: pdf?.markups ?? []
-        )
-        return try await Task.detached(priority: .userInitiated) {
-            try NotebookExporter.export(snapshot, as: format, directory: directory)
-        }.value
     }
 
     func drawingDidChange(_ combined: PKDrawing) {
@@ -178,6 +167,7 @@ final class EditorViewModel {
         guard !isReadOnly, pages.count > 1, pages.indices.contains(index) else { return }
         let page = manifest.pages.remove(at: index)
         pageDrawings[page.id] = nil
+        pageItems[page.id] = nil
         thumbnails[page.id] = nil
         dirtyPageIDs.remove(page.id)
         deletedPageIDs.insert(page.id)
@@ -199,14 +189,6 @@ final class EditorViewModel {
         structureDidChange()
     }
 
-    func pageIndices(bookmarkedOnly: Bool) -> [Int] {
-        pages.indices.filter { !bookmarkedOnly || pages[$0].isBookmarked }
-    }
-
-    func pageHasInk(at index: Int) -> Bool {
-        pages.indices.contains(index) && !drawing(forPage: pages[index].id).strokes.isEmpty
-    }
-
     func setBackground(_ background: PageBackground, forPageAt index: Int) {
         guard !isReadOnly, pages.indices.contains(index), pages[index].background != background else { return }
         manifest.pages[index].background = background
@@ -222,6 +204,8 @@ final class EditorViewModel {
     }
 
     private func structureDidChange() {
+        itemUndoManager.removeAllActions()
+        selectedItemID = nil
         pdf?.rebuild(pages: pages)
         if pdf?.pruneOrphanedMarkups() == true { isPDFDirty = true }
         structureVersion += 1
@@ -274,10 +258,10 @@ extension EditorViewModel {
         }
     }
 
-    private func finishBackgroundWrite(_ sequence: Int, changes: PendingChanges,
+    private func finishBackgroundWrite(_ sequence: Int, changes: EditorPendingChanges,
                                        result: Result<NotebookManifest, any Error>) {
         isWriting = false
-        inFlight = PendingChanges()
+        inFlight = EditorPendingChanges()
         switch result {
         case let .success(written):
             saveSucceeded(written, pages: changes.pages)
@@ -309,8 +293,8 @@ extension EditorViewModel {
     }
 
     /// Captures what to write and marks it clean. Changes made while it is written count as new changes.
-    private func takeSnapshot(includingInFlight: Bool) -> (NotebookStore.SaveSnapshot, PendingChanges) {
-        var changes = PendingChanges(pages: dirtyPageIDs, deleted: deletedPageIDs, markups: isPDFDirty)
+    private func takeSnapshot(includingInFlight: Bool) -> (NotebookStore.SaveSnapshot, EditorPendingChanges) {
+        var changes = EditorPendingChanges(pages: dirtyPageIDs, deleted: deletedPageIDs, markups: isPDFDirty)
         if includingInFlight {
             changes.pages.formUnion(inFlight.pages)
             changes.deleted.formUnion(inFlight.deleted)
@@ -326,7 +310,8 @@ extension EditorViewModel {
             manifest: manifest,
             drawings: Dictionary(uniqueKeysWithValues: changes.pages.map { ($0, drawing(forPage: $0)) }),
             markups: changes.markups ? pdf?.markups : nil,
-            deletedPageIDs: changes.deleted
+            deletedPageIDs: changes.deleted,
+            pageItems: pageItems, imageAssets: imageAssets
         )
         return (snapshot, changes)
     }
@@ -342,7 +327,7 @@ extension EditorViewModel {
 
     /// Everything the failed save carried becomes unsaved again, and a retry is scheduled with backoff so a full
     /// disk isn't hammered.
-    private func saveFailed(_ error: any Error, changes: PendingChanges) {
+    private func saveFailed(_ error: any Error, changes: EditorPendingChanges) {
         dirtyPageIDs.formUnion(changes.pages.filter { pageDrawings[$0] != nil })
         deletedPageIDs.formUnion(changes.deleted)
         isPDFDirty = isPDFDirty || changes.markups
@@ -363,7 +348,8 @@ extension EditorViewModel {
             thumbnailVersions[id, default: 0] += 1
             return PageThumbnailJob(id: id, version: thumbnailVersions[id] ?? 0, background: page.background,
                                 pdfPageIndex: page.pdfPageIndex, drawing: drawing(forPage: id),
-                                markups: pdf?.markups.filter { $0.pageID == id } ?? [])
+                                markups: pdf?.markups.filter { $0.pageID == id } ?? [],
+                                items: pageItems[id] ?? [], imageAssets: imageAssets)
         }
         guard !jobs.isEmpty else { return }
         let sourceURL = store.sourcePDFURL(for: manifest.id)
@@ -393,5 +379,19 @@ extension EditorViewModel {
             await task.value
             thumbnailTasks[token] = nil
         }
+    }
+}
+
+extension EditorViewModel {
+    func retainImage(_ data: Data, id: UUID) { if !isReadOnly { imageAssets[id] = data } }
+
+    func commitItems(_ items: [PageItem], on pageID: UUID) {
+        guard !isReadOnly, let index = pages.firstIndex(where: { $0.id == pageID }) else { return }
+        pageItems[pageID] = items
+        manifest.pages[index].itemsRevision = UUID()
+        dirtyPageIDs.insert(pageID)
+        isManifestDirty = true
+        refreshThumbnails([pageID])
+        scheduleSave()
     }
 }
