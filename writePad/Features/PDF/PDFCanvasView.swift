@@ -91,6 +91,9 @@ struct PDFCanvasView: UIViewRepresentable {
             overlay.canvas.drawingPolicy = viewModel.allowsFingerDrawing ? .anyInput : .pencilOnly
             overlay.canvas.accessibilityIdentifier = "PDF Ink Page \((pdf.pages.firstIndex { $0.id == id } ?? 0) + 1)"
             picker.addObserver(overlay.canvas)
+            overlay.snapper = ShapeSnapper(canvas: overlay.canvas) { [viewModel] in
+                ShapeSnapper.isEnabledInSettings && !viewModel.isReadOnly
+            }
             overlays[id] = overlay
             return overlay
         }
@@ -109,7 +112,8 @@ struct PDFCanvasView: UIViewRepresentable {
         }
 
         func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
-            guard let id = overlays.first(where: { $0.value.canvas === canvasView })?.key else { return }
+            guard let (id, overlay) = overlays.first(where: { $0.value.canvas === canvasView }) else { return }
+            overlay.snapper?.drawingDidChange()
             viewModel.drawingDidChange(canvasView.drawing, pageID: id)
         }
 
@@ -153,6 +157,7 @@ struct PDFCanvasView: UIViewRepresentable {
 
 final class PDFPageCanvas: UIView {
     let canvas = PKCanvasView()
+    var snapper: ShapeSnapper?
     private let pageSize: CGSize
 
     init(size: CGSize) {

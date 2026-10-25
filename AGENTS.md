@@ -41,7 +41,8 @@ writePad/Storage/           NotebookStore — reads/writes .writepad packages
 writePad/Features/Editor/   NotebookCanvasView (one zoomable PKCanvasView, pages stacked), PageLayout
                             (page geometry + merge/split of per-page drawings), PageBackgroundRenderer,
                             EditorViewModel (+ saving extension), SaveTiming, PageThumbnailJob,
-                            NotebookEditorView, PageSidebarView
+                            NotebookEditorView, PageSidebarView, ShapeRecognizer (pure geometry) and
+                            ShapeSnapper (hold-to-snap hook on any PKCanvasView)
 writePad/Features/Library/  LibraryView/ViewModel (SwiftData index, folders, search, sort), NotebookCard
 writePad/Features/PDF/      PDFNotebook (document, markups, outline, search), PDFCanvasView (PDFView +
                             per-page PKCanvasView overlays), PDFSidebarView, PDFTools

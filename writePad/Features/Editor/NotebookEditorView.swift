@@ -4,6 +4,7 @@ struct NotebookEditorView: View {
     @Bindable var viewModel: EditorViewModel
     var onClose: (() -> Void)?
     @State private var canvasController = CanvasController()
+    @AppStorage(ShapeSnapper.enabledKey) private var shapeSnapEnabled = true
     @State private var columnVisibility = NavigationSplitViewVisibility.detailOnly
 
     var body: some View {
@@ -72,6 +73,11 @@ struct NotebookEditorView: View {
                     Label("Draw with Finger", systemImage: "hand.draw")
                 }
                 .toggleStyle(.button)
+                Toggle(isOn: $shapeSnapEnabled) {
+                    Label("Shape Snap", systemImage: "square.on.circle")
+                }
+                .toggleStyle(.button)
+                .help("Hold the pen still at the end of a stroke to straighten it into a line or shape")
             }
         }
     }

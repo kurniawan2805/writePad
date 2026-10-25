@@ -8,4 +8,4 @@ line_length:
   warning: 140
   error: 200
 identifier_name:
-  excluded: [id, x, y]
+  excluded: [id, x, y, dx, dy]

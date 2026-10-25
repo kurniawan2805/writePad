@@ -22,6 +22,9 @@ struct CanvasView: UIViewRepresentable {
         let canvas = NotebookCanvasView()
         canvas.delegate = context.coordinator
         controller.canvasView = canvas
+        context.coordinator.snapper = ShapeSnapper(canvas: canvas) { [viewModel] in
+            ShapeSnapper.isEnabledInSettings && !viewModel.isReadOnly
+        }
         context.coordinator.reload(canvas)
 
         let toolPicker = context.coordinator.toolPicker
@@ -57,6 +60,7 @@ struct CanvasView: UIViewRepresentable {
         let viewModel: EditorViewModel
         var structureVersion = -1
         var handledScrollRequestID: UUID?
+        var snapper: ShapeSnapper?
         private var isApplyingModel = false
 
         init(viewModel: EditorViewModel) {
@@ -76,6 +80,7 @@ struct CanvasView: UIViewRepresentable {
 
         func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
             guard !isApplyingModel else { return }
+            snapper?.drawingDidChange()
             viewModel.drawingDidChange(canvasView.drawing)
         }
 

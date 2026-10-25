@@ -16,7 +16,7 @@ Phase 2 work (see `PLAN.md` §4) split into tasks any agent can pick up. Read `A
 
 | ID | Task | Diff. | Suggested owner | Status |
 |---|---|---|---|---|
-| T1 | Shape snap: draw and hold to straighten lines, arrows, ellipses, rectangles | L | Claude | in progress (Claude, 2026-10-25) |
+| T1 | Shape snap: draw and hold to straighten lines, ellipses, rectangles, triangles | L | Claude | done (see T1 notes) |
 | T2 | Page templates: Cornell, music staff, planner week | S | Codex / cheaper | open |
 | T3 | Bookmarks: star pages, Bookmarks filter in the page sidebar | S | Codex / cheaper | open |
 | T4 | CI: GitHub Actions build + unit tests on every push | S | Codex / cheaper | open |
@@ -31,10 +31,14 @@ Phase 2 work (see `PLAN.md` §4) split into tasks any agent can pick up. Read `A
 
 ## Task notes
 
-### T1 Shape snap (L)
-Hold the pen still for ~0.45 s at the end of a stroke and the stroke is replaced by a clean shape. Pure geometry
-recognizer (testable without UI) plus a canvas hook. Must work on the notebook canvas and on PDF page overlays, keep
-the stroke's ink, and be one undo step. Settings toggle to turn it off.
+### T1 Shape snap (L) — done
+Hold the pen still for 0.45 s before lifting and the stroke becomes a clean line, circle/ellipse, rectangle or
+triangle with the same ink. `ShapeRecognizer` (pure geometry, `ShapeRecognizerTests`), `ShapeSnapper` +
+`StrokeHoldRecognizer` (canvas hook, `ShapeSnapperTests`), wired into the notebook canvas and every PDF page overlay.
+Undo after a snap restores the hand-drawn stroke; undo again removes it. Toolbar toggle "Shape Snap" (on by default).
+Verified with real touch gestures in the simulator: a held 2° line came out level, a quick one did not.
+- Not done, possible follow-ups (S/M): arrows; snapping live while the pen is still down (today it snaps on lift);
+  a UI test for snapping on a PDF page; tuning thresholds with real Apple Pencil handwriting (device check).
 
 ### T2 Page templates (S)
 Add cases to `PageBackground` (`cornell`, `music`, `plannerWeek`) and draw them in
